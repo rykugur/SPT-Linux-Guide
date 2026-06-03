@@ -1,2 +1,9 @@
 scripts/prepare-release.sh
 scripts/shellcheck
+
+# devenv / direnv
+.devenv
+.direnv
+.pre-commit-config.yaml
+result
+result-*

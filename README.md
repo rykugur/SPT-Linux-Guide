@@ -55,6 +55,43 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/MadByteDE/SPT-Linux-Guid
 
 ### [Troubleshooting](docs/issues.md)
 
+## Development
+
+This repository includes a Nix flake + devenv-based development shell aimed at making it easy to develop and debug the `spt-additions` installer script (especially the NixOS-specific paths).
+
+### Quick start (with direnv)
+
+```bash
+direnv allow
+```
+
+### Without direnv
+
+```bash
+nix develop
+# or
+devenv shell
+```
+
+The shell provides the exact tools the script looks for (`umu-run`, `7zzs`, `hpatchz`, `jq`, `xxd`, `steam-run`, ASP.NET runtime, etc.) plus development helpers like `shellcheck` and `just`.
+
+See the `justfile` for common tasks:
+
+```bash
+just --list
+just check
+just version
+just run-steam --no-ansi --no-prompt version   # explicitly test the steam-run wrapper path
+```
+
+The script should now auto-detect NixOS (`/etc/NIXOS`) + `steam-run` and wrap `umu-run` automatically. The dev shell makes this easy to iterate on.
+
+### Why a dev shell?
+
+- Reproducible environment for the script's native dependencies on NixOS (and other distros).
+- Easy testing of the FHS/umu wrapper logic without polluting your user profile.
+- Shellcheck + syntax checks during development.
+
 ## Contributions
 If you want to contribute to the guide, feel free to:
 - Send us a [pull request](https://github.com/MadByteDE/SPT-Linux-Guide/compare/SPTv4-Dev...main)

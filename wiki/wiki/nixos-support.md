@@ -11,6 +11,7 @@
   - NixOS detection + auto `UMU_CMD="steam-run ..."` (affects m_umu and key direct calls).
   - Helpful messages in check_native_deps + check_aspnet when on /etc/NIXOS.
   - UMU_CMD mechanism for future extensions.
+- Dev environment: Added `flake.nix` + `devenv.nix` + `justfile` (and .envrc) so you get all the script's native tools reproducibly, including `steam-run` for easy FHS wrapper testing. See the "Development" section in the main README.
 - This wiki: Full bootstrap of llm-wiki (raw/ + wiki/ + schema + index + log), multiple entity/concept/platform pages written during research/ingest/synthesis. (See log.md for details.)
 
 Remaining (tracked in project todos / future sessions): more test coverage, .desktop shortcut handling, additional direct UMU_PATH sites, user reports, perhaps explicit `--fhs` flag or env, updating legacy notes, etc.

@@ -50,6 +50,43 @@ rpm-ostree install aspnetcore-runtime-9.0
 sudo pacman -S aspnet-runtime-9.0
 ```
 
+### Nixpkgs (NixOS or any Nix-based system)
+> [!IMPORTANT]
+> The Linux SPT server (`SPT/SPT.Server.Linux`) is a native .NET 9 application. On NixOS it will fail with "You must install .NET to run this application" (or similar) unless both the package *and* `DOTNET_ROOT` are configured.
+
+Add the package (system-wide or per-user):
+```nix
+# configuration.nix (system)
+environment.systemPackages = with pkgs; [
+  dotnet-aspnetcore_9   # or dotnetCorePackages.aspnetcore_9_0
+];
+```
+
+```nix
+# home.nix / home-manager (user only)
+home.packages = with pkgs; [
+  dotnet-aspnetcore_9
+];
+```
+
+**Critical**: Also set the session variable so the runtime is discoverable:
+```nix
+environment.sessionVariables = {
+  DOTNET_ROOT = "${pkgs.dotnet-aspnetcore_9}/share/dotnet/";
+};
+```
+(or `home.sessionVariables` for home-manager). Log out/in or `exec $SHELL` after `nixos-rebuild switch`.
+
+**Verification** (after rebuild + new shell):
+```bash
+dotnet --list-runtimes | grep -i aspnet
+# Should show something with 9.0
+```
+
+The `spt-additions` script will also perform a non-fatal check for AspNet 9.0 before installing SPT. The same `DOTNET_ROOT` lets the installed `SPT.Server.Linux` actually start.
+
+See the [NixOS support wiki page](wiki/wiki/nixos-support.md) (in this repo) and historical PR [#14](https://github.com/MadByteDE/SPT-Linux-Guide/pull/14) for more context, steam-run workarounds for the installer itself, and Lutris-specific tips.
+
 ***
 Still having issues? Visit our [issues section](../../docs/issues.md).
 

@@ -1,101 +1,71 @@
 {
-  description = "Development environment for SPT-Linux-Guide (spt-additions script + NixOS testing)";
+  description = "Development environment for SPT-Linux-Guide (spt-additions bash script, with focus on NixOS support)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    devenv.url = "github:cachix/devenv";
-    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = inputs@{ flake-parts, ... }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = { self, nixpkgs }:
+    let
       systems = [ "x86_64-linux" "aarch64-linux" ];
-
-      imports = [
-        inputs.devenv.flakeModule
-      ];
-
-      perSystem = { config, pkgs, lib, system, ... }: {
-        # Dev shell using devenv (user's preferred tool)
-        devenv.shells.default = {
-          name = "spt-linux-guide";
-
-          packages = with pkgs; [
-            # --- Core dependencies for spt-additions ---
-            umu-launcher          # umu-run for the script
-            steam-run             # FHS wrapper (critical for NixOS testing of umu)
-            jq
-            unixtools.xxd
-            hdiffpatch            # provides hpatchz
-            python3
-            curl
-            p7zip                 # we provide 7zzs below for script compatibility
-
-            # Linux server runtime
-            dotnet-aspnetcore_9
-
-            # --- Development / debugging tools ---
-            shellcheck
-            shfmt
-            git
-            just
-            file
-            which
-            tree
-
-            # Custom 7zzs so the script's `command -v 7zzs` and `m_7z` succeed
-            # without triggering the auto-downloader every time.
-            (pkgs.runCommand "7zzs" { } ''
-              mkdir -p $out/bin
-              ln -s ${lib.getExe p7zip} $out/bin/7zzs
-            '')
-          ];
-
-          # Make sure the script can find things the way it expects on NixOS
-          env = {
-            # The script already detects /etc/NIXOS + steam-run and wraps automatically,
-            # but we can hint here too.
-            SPT_DEV = "1";
+      forEachSystem = nixpkgs.lib.genAttrs systems;
+    in {
+      devShells = forEachSystem (system:
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;  # steam-run (and potentially others) are unfree
           };
+        in {
+          default = pkgs.mkShell {
+            packages = with pkgs; [
+              # === Tools the spt-additions script expects ===
+              umu-launcher      # umu-run
+              steam-run         # FHS wrapper – essential for testing the NixOS auto-wrap logic
+              jq
+              unixtools.xxd
+              # hpatchz/hdiffpatch: the script auto-downloads it via install_dep if missing.
+              # Adding here is optional; we omit to avoid attr hunting.
+              python3
+              curl
+              p7zip
 
-          enterShell = ''
-            echo "SPT Linux Guide development shell"
-            echo "=================================="
-            echo ""
-            echo "Tools available for the script:"
-            echo "  umu-run:     $(command -v umu-run || echo 'not found')"
-            echo "  7zzs:        $(command -v 7zzs || echo 'not found')"
-            echo "  steam-run:   $(command -v steam-run || echo 'not found')"
-            echo "  hpatchz:     $(command -v hpatchz || echo 'not found')"
-            echo "  jq / xxd:    $(command -v jq) / $(command -v xxd)"
-            echo "  dotnet (for server): $(command -v dotnet || echo 'not in PATH, use DOTNET_ROOT')"
-            echo ""
-            echo "Useful commands:"
-            echo "  ./scripts/spt-additions --help"
-            echo "  ./scripts/spt-additions --no-ansi version"
-            echo "  just --list"
-            echo ""
-            echo "NixOS-specific testing:"
-            echo "  The script should now auto-wrap with steam-run when it detects NixOS."
-            echo "  You can force/test the path with: steam-run ./scripts/spt-additions ..."
-            echo ""
-          '';
+              # Provide `7zzs` exactly as the script looks for it (avoids auto-download in dev)
+              (pkgs.runCommand "7zzs" { } ''
+                mkdir -p $out/bin
+                ln -s ${lib.getExe p7zip} $out/bin/7zzs
+              '')
 
-          # Optional: basic tests the shell provides the expected tools
-          enterTest = ''
-            echo "Checking required tools..."
-            command -v umu-run >/dev/null
-            command -v 7zzs >/dev/null
-            command -v jq >/dev/null
-            command -v xxd >/dev/null
-            command -v hpatchz >/dev/null
-            command -v steam-run >/dev/null
-            echo "All core tools present."
-          '';
-        };
+              # For the native Linux server (SPT.Server.Linux)
+              dotnet-aspnetcore_9
 
-        # Also expose a plain mkShell as devShells.default for people who don't use devenv
-        devShells.default = config.devenv.shells.default;
-      };
+              # === Development helpers ===
+              shellcheck
+              shfmt
+              git
+              just
+              file
+              which
+              tree
+            ];
+
+            shellHook = ''
+              echo "SPT Linux Guide dev shell"
+              echo "=========================="
+              echo ""
+              echo "Script dependencies:"
+              echo "  umu-run:   $(command -v umu-run || echo 'MISSING')"
+              echo "  7zzs:      $(command -v 7zzs || echo 'MISSING')"
+              echo "  steam-run: $(command -v steam-run || echo 'MISSING')"
+              echo "  jq / xxd : $(command -v jq || echo 'MISSING') / $(command -v xxd || echo 'MISSING')"
+              echo ""
+              echo "NixOS note: The script auto-detects /etc/NIXOS + steam-run and wraps umu-run for FHS."
+              echo "            Force/test the path explicitly with: steam-run ./scripts/spt-additions ..."
+              echo ""
+              echo "Try: just --list   (or just check / just version)"
+            '';
+          };
+        }
+      );
     };
 }

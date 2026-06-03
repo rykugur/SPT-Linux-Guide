@@ -21,8 +21,8 @@ If you encounter an issue while playing SPT on Linux, do **NOT** report it to th
 Additions CLI installer
   - 
 
-  > [!WARNING]
-  > NixOS is currently not supported ([#14](https://github.com/MadByteDE/SPT-Linux-Guide/pull/14))
+  > [!NOTE]
+  > **NixOS users**: The script can work but requires extra setup (mainly `dotnet-aspnetcore_9` + `DOTNET_ROOT` session variable, and often `steam-run` to wrap umu-run for FHS reasons). See the [Nixpkgs section in aspnet docs](docs/aspnet.md) and the detailed [[wiki/wiki/nixos-support.md]] (or the file `wiki/wiki/nixos-support.md` after cloning the repo) + historical PR [#14](https://github.com/MadByteDE/SPT-Linux-Guide/pull/14). Lutris additions path has more success reports. Help testing/improving is welcome!
 
   - Guided installer for EFT/SPT using UMU-Launcher / GE-Proton directly (without Lutris/Bottles)
   - ⚠️ Uses a custom **native Linux** bash script ([view source](scripts/spt-additions))

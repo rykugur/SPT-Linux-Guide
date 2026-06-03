@@ -1,0 +1,1 @@
+../../docs/bottles/manual_guide.md

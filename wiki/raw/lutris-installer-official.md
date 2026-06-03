@@ -1,0 +1,1 @@
+../../docs/lutris/installer_official.md

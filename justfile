@@ -36,10 +36,25 @@ shell:
     nix develop
 
 # Run the SPT server directly in the current terminal (best for seeing errors on NixOS)
-# Assumes default install path; adjust if you chose a different one during install.
+# It tries to find the install path from the script's config file first.
 server:
-    cd ~/Games/SPTarkov || cd "$HOME/Games/SPTarkov" || { echo "SPT dir not found at ~/Games/SPTarkov"; exit 1; }
-    echo "Running server from $(pwd) ..."
+    CONFIG_FILE="$HOME/.config/spt-additions/app.conf"
+    SPT_DIR=""
+    if [ -f "$CONFIG_FILE" ]; then
+        SPT_DIR=$(grep '^spt-path=' "$CONFIG_FILE" | head -1 | cut -d= -f2- | tr -d '"')
+    fi
+    if [ -z "$SPT_DIR" ] || [ ! -d "$SPT_DIR" ]; then
+        SPT_DIR="$HOME/Games/SPTarkov"
+    fi
+    if [ ! -d "$SPT_DIR" ]; then
+        echo "SPTarkov directory not found."
+        echo "Check your config: $CONFIG_FILE (look for spt-path=...)"
+        echo "Or search for the binary: find ~ -name 'SPT.Server.Linux' 2>/dev/null"
+        echo "Then cd to the directory containing 'launch-server.sh' and run: ./SPT/SPT.Server.Linux"
+        exit 1
+    fi
+    echo "Running server from $SPT_DIR ..."
+    cd "$SPT_DIR"
     ./SPT/SPT.Server.Linux
 
 # Run the SPT launcher (via the script, which applies NixOS wrappers if needed)

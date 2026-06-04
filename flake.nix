@@ -53,6 +53,11 @@
               cabextract
             ];
 
+            env = {
+              # Required for the native SPT.Server.Linux .NET app to find its runtime on NixOS
+              DOTNET_ROOT = "${pkgs.dotnet-aspnetcore_9}/share/dotnet";
+            };
+
             shellHook = ''
               echo "SPT Linux Guide dev shell"
               echo "=========================="
@@ -67,6 +72,8 @@
               echo "            Force/test the path explicitly with: steam-run ./scripts/spt-additions ..."
               echo ""
               echo "Try: just --list   (or just check / just version)"
+              echo ""
+              echo "DOTNET_ROOT for server: $DOTNET_ROOT"
             '';
           };
         }

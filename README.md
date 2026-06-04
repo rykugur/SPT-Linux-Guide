@@ -148,6 +148,8 @@ This is a thin convenience wrapper around `spt-additions run launcher`. It gets 
 
 Requires that SPT has already been installed (via `spt-additions` or the Lutris path).
 
+Mod dependencies are supported declaratively. When you list a mod (e.g. SAIN) in `programs.spt.mods`, its `dependencies` (BigBrain, Waypoints, ...) are automatically included in the merge via the package's `passthru.dependencies`. See the detailed example in `flake.nix` using `lib.mkSptMod { dependencies = [ ... ]; }`.
+
 #### Home Manager module
 
 ```nix

@@ -307,16 +307,37 @@ DESKTOP_EOF
       #           enable = true;
       #           server.enable = true;
       #           launcher.enable = true;
-      #           # Individual mod packages (using the lib helper)
-      #           mods = [
-      #             (inputs.spt-linux-guide.lib.mkSptMod {
+      #
+      #           # Individual mod packages using the lib helper.
+      #           # Only list "root" mods; their declared dependencies are
+      #           # automatically included in the merge.
+      #           let
+      #             bigbrain = inputs.spt-linux-guide.lib.mkSptMod {
       #               pkgs = pkgs;
-      #               pname = "uifixes";
-      #               version = "5.3.9";
-      #               url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-      #               hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
-      #             })
-      #           ];
+      #               pname = "bigbrain";
+      #               version = "1.4.0";
+      #               url = "https://github.com/DrakiaXYZ/SPT-BigBrain/releases/download/1.4.0/DrakiaXYZ-BigBrain-1.4.0.7z";
+      #               hash = "sha256-...";
+      #             };
+      #             waypoints = inputs.spt-linux-guide.lib.mkSptMod {
+      #               pkgs = pkgs;
+      #               pname = "waypoints";
+      #               version = "1.8.2";
+      #               url = "https://github.com/DrakiaXYZ/SPT-Waypoints/releases/download/1.8.2/DrakiaXYZ-Waypoints-1.8.2.7z";
+      #               hash = "sha256-...";
+      #             };
+      #             sain = inputs.spt-linux-guide.lib.mkSptMod {
+      #               pkgs = pkgs;
+      #               pname = "sain";
+      #               version = "4.4.3";
+      #               url = "https://github.com/ArchangelWTF/SAIN/releases/download/v4.4.3/SAIN.4.4.3.zip";
+      #               hash = "sha256-...";
+      #               dependencies = [ bigbrain waypoints ];
+      #             };
+      #           in
+      #           {
+      #             mods = [ sain ];  # deps pulled in automatically
+      #           };
       #         };
       #       }
       #     ];
@@ -344,20 +365,25 @@ DESKTOP_EOF
           #     url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
           #     hash = "sha256-...";
           #   };
-          mkSptMod = { pkgs, pname, version, url, hash, ... }:
-            pkgs.stdenv.mkDerivation {
-              inherit pname version;
-              src = pkgs.fetchurl { inherit url hash; };
-              nativeBuildInputs = [ pkgs.p7zip ];
-              installPhase = ''
-                mkdir -p $out
-                7zz x $src -o$out
-              '';
-              meta = {
-                description = "SPT mod: ${pname}";
-                homepage = "https://github.com/tyfon7/${pname}"; # best effort
+          mkSptMod = { pkgs, pname, version, url, hash, dependencies ? [], ... }:
+            let
+              mod = pkgs.stdenv.mkDerivation {
+                inherit pname version;
+                src = pkgs.fetchurl { inherit url hash; };
+                nativeBuildInputs = [ pkgs.p7zip ];
+                installPhase = ''
+                  mkdir -p $out
+                  7zz x $src -o$out
+                '';
+                passthru = {
+                  inherit dependencies;
+                };
+                meta = {
+                  description = "SPT mod: ${pname}";
+                  homepage = "https://github.com/tyfon7/${pname}"; # best effort, override in call if needed
+                };
               };
-            };
+            in mod;
         };
 
         homeModules = {

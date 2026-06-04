@@ -2,6 +2,25 @@
 
 let
   cfg = config.programs.spt;
+
+  # Resolve the full transitive closure of mods (including dependencies declared
+  # via passthru.dependencies in mkSptMod). Dependencies are listed first so
+  # that base frameworks are applied before the mods that depend on them.
+  resolveModClosure = mods:
+    let
+      go = m: [ m ] ++ lib.concatMap go (m.passthru.dependencies or [ ]);
+    in
+      lib.unique (lib.flatten (map go mods));
+
+  allMods = resolveModClosure cfg.mods;
+
+  # A single store path containing the union of all mod file trees.
+  # symlinkJoin merges the BepInEx/ and SPT/ directories from the closure.
+  # If there are file-level collisions, the last one in the list wins.
+  modEnv = pkgs.symlinkJoin {
+    name = "spt-mods-env";
+    paths = allMods;
+  };
 in
 {
   options.programs.spt = {
@@ -50,23 +69,19 @@ in
       type = lib.types.listOf lib.types.package;
       default = [];
       description = ''
-        List of individual SPT mod packages (see flake.lib.mkSptMod).
+        List of "root" SPT mod packages (see flake.lib.mkSptMod).
+
+        Only list the mods you directly want (e.g. SAIN). Their declared
+        dependencies (BigBrain, Waypoints, etc.) will be pulled in
+        automatically via the package's passthru.dependencies.
 
         Each package should unpack to a directory tree with BepInEx/ and/or
-        SPT/ subdirectories. These will be merged into your SPTarkov install
-        directory via home-manager activation (non-destructive by default:
-        uses --ignore-existing).
+        SPT/ subdirectories. The full closure will be merged into your
+        SPTarkov install directory via home-manager activation
+        (non-destructive by default: uses --ignore-existing).
 
         Example:
-          mods = [
-            (inputs.spt-linux-guide.lib.mkSptMod {
-              pkgs = pkgs;
-              pname = "uifixes";
-              version = "5.3.9";
-              url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-              hash = "sha256-...";
-            })
-          ];
+          mods = [ sain ];  # where sain = mkSptMod { dependencies = [ bigbrain waypoints ]; ... }
       '';
     };
   };
@@ -81,21 +96,19 @@ in
       DOTNET_ROOT = "${cfg.dotnetRoot.package}/share/dotnet";
     };
 
-    # Merge declared mods into the mutable SPT install dir on activation.
-    # This mirrors the archive extraction used by spt-additions (BepInEx/ + SPT/ merge).
-    # Uses rsync --ignore-existing to avoid clobbering manual/user files.
+    # Merge the full mod closure (with deps) into the mutable SPT install dir.
+    # We build one modEnv in the store and rsync from it. This mirrors the
+    # archive extraction used by spt-additions.
     home.activation.applySptMods = lib.hm.dag.entryAfter ["writeBoundary"] ''
       SPT_DIR="$HOME/Games/SPTarkov"
-      if [ -d "$SPT_DIR" ] && [ ${toString (builtins.length cfg.mods)} -gt 0 ]; then
-        echo "Applying ${toString (builtins.length cfg.mods)} nix-managed SPT mod(s)..."
-        ${lib.concatMapStringsSep "\n" (mod: ''
-          if [ -d "${mod}/BepInEx" ]; then
-            ${pkgs.rsync}/bin/rsync -a --ignore-existing "${mod}/BepInEx/" "$SPT_DIR/BepInEx/"
-          fi
-          if [ -d "${mod}/SPT" ]; then
-            ${pkgs.rsync}/bin/rsync -a --ignore-existing "${mod}/SPT/" "$SPT_DIR/SPT/"
-          fi
-        '') cfg.mods}
+      if [ -d "$SPT_DIR" ] && [ -d "${modEnv}" ]; then
+        echo "Applying ${toString (builtins.length allMods)} nix-managed SPT mod(s) (including transitive dependencies)..."
+        if [ -d "${modEnv}/BepInEx" ]; then
+          ${pkgs.rsync}/bin/rsync -a --ignore-existing "${modEnv}/BepInEx/" "$SPT_DIR/BepInEx/"
+        fi
+        if [ -d "${modEnv}/SPT" ]; then
+          ${pkgs.rsync}/bin/rsync -a --ignore-existing "${modEnv}/SPT/" "$SPT_DIR/SPT/"
+        fi
         echo "Mod merge complete. Restart client/server if running."
       fi
     '';

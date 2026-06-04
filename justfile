@@ -56,8 +56,8 @@ server:
         exit 1
     fi
     echo "Running server from $SPT_DIR ..."
-    cd "$SPT_DIR"
-    ./SPT/SPT.Server.Linux
+    cd "$SPT_DIR/SPT"
+    ./SPT.Server.Linux
 
 # Run the SPT launcher (via the script, which applies NixOS wrappers if needed)
 launcher:

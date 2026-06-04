@@ -35,7 +35,8 @@ clean-cache:
 shell:
     nix develop
 
-# Run the SPT server directly in the current terminal (best for seeing errors on NixOS)
+# Run the SPT server directly in the current terminal (best for seeing errors on NixOS).
+# Fast path that only works when DOTNET_ROOT is already set (e.g. this dev shell).
 # It tries to find the install path from the script's config file first.
 server:
     #!/usr/bin/env bash
@@ -59,9 +60,19 @@ server:
     cd "$SPT_DIR/SPT"
     ./SPT.Server.Linux
 
+# Run via the packaged `spt-server` (hermetic DOTNET_ROOT + .desktop support).
+# This is what end-users on NixOS get when they `nix run ...#spt-server` or
+# install the package. Works from outside the dev shell and provides the
+# distributable command + desktop entry.
+spt-server *args:
+    nix run .#spt-server -- {{args}}
+
 # Run the SPT launcher (via the script, which applies NixOS wrappers if needed)
 launcher:
     ./scripts/spt-additions run launcher
+
+spt-launcher *args:
+    nix run .#spt-launcher -- {{args}}
 
 # Format the justfile itself (requires just)
 fmt:

@@ -57,7 +57,13 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/MadByteDE/SPT-Linux-Guid
 
 ## Development
 
-This repository includes a Nix flake + devenv-based development shell aimed at making it easy to develop and debug the `spt-additions` installer script (especially the NixOS-specific paths).
+This repository includes a Nix flake (structured with [flake-parts](https://github.com/hercules-ci/flake-parts)) aimed at making it easy to develop the `spt-additions` installer, run SPT-related tools, and — most importantly — consume the guide from other flakes (your desktop config, deploy scripts, etc.).
+
+The long-term intent is that you can add this repo as a flake input and get:
+
+- A reliable way to run `spt-additions` (the installer) with all its native dependencies on any Nix machine.
+- `spt-server`, `spt-launcher`, and other launchers.
+- (Planned) NixOS / home-manager modules for declarative setup of the server, desktop entries, DOTNET_ROOT, etc.
 
 ### Quick start (with direnv)
 
@@ -73,7 +79,7 @@ nix develop
 devenv shell
 ```
 
-The shell provides the exact tools the script looks for (`umu-run`, `7zzs`, `hpatchz`, `jq`, `xxd`, `steam-run`, ASP.NET runtime, etc.) plus development helpers like `shellcheck` and `just`.
+The dev shell provides the exact tools the `spt-additions` script expects (`umu-run`, `7zzs`, `steam-run`, `jq`, `xxd`, ASP.NET runtime, etc.) plus helpers like `shellcheck`, `shfmt`, and `just`.
 
 See the `justfile` for common tasks:
 
@@ -82,14 +88,87 @@ just --list
 just check
 just version
 just run-steam --no-ansi --no-prompt version   # explicitly test the steam-run wrapper path
+just server          # direct (inside dev shell)
+just spt-server      # via the packaged launcher
 ```
 
-The script should now auto-detect NixOS (`/etc/NIXOS`) + `steam-run` and wrap `umu-run` automatically. The dev shell makes this easy to iterate on.
+The script auto-detects NixOS (`/etc/NIXOS`) + `steam-run` and wraps `umu-run` automatically. The dev shell makes iteration easy.
 
-### Why a dev shell?
+### Packaged entrypoints + Home Manager module (great for use as a flake input)
 
-- Reproducible environment for the script's native dependencies on NixOS (and other distros).
-- Easy testing of the FHS/umu wrapper logic without polluting your user profile.
+In addition to the dev shell, the flake exposes ready-to-run packages and a Home Manager module. This is the recommended way to consume the guide from another flake (your personal desktop config, etc.).
+
+You can also expose the packages via the overlay so that `programs.spt.*.package` options resolve automatically.
+
+#### `spt-additions` — the installer
+
+```bash
+# Run the additions installer directly (all native deps provided by the flake)
+nix run github:MadByteDE/SPT-Linux-Guide#spt-additions
+
+# Or from a pinned input in your own flake:
+# packages = [ inputs.spt-linux-guide.packages.${pkgs.system}.spt-additions ];
+# Then just run `spt-additions`
+```
+
+This wrapper ensures that `umu-launcher`, `steam-run`, `7zzs`, `jq`, `xxd`, the ASP.NET runtime, etc. are in `$PATH`, plus `DOTNET_ROOT` is set. Perfect for NixOS or any Nix machine.
+
+You can still use the old one-liner for the absolute latest version, but pinning via the flake gives reproducibility.
+
+#### `spt-server` launcher (for NixOS / end users)
+
+```bash
+# Try immediately
+nix run github:MadByteDE/SPT-Linux-Guide#spt-server
+
+# Or install persistently
+# packages = [ inputs.spt-linux-guide.packages.${pkgs.system}.spt-server ];
+```
+
+This gives you a `spt-server` binary that:
+
+- Hardcodes the correct `DOTNET_ROOT` so the native `SPT.Server.Linux` works on NixOS without (or in addition to) global session variables.
+- Auto-discovers your SPT install via the guide's config / `SPTARKOV_PATH` / default.
+- Ships a `.desktop` file + icon, so "SPT Server" appears in application menus. Uses `Terminal=true`.
+
+See the [[nixos-support]] wiki page for background on the launcher-only packaging approach.
+
+#### `spt-launcher` — the client/launcher GUI
+
+```bash
+# Launch the SPT client/launcher (the thing you use to start the actual game)
+nix run github:MadByteDE/SPT-Linux-Guide#spt-launcher
+
+# Or from a pinned input:
+# packages = [ inputs.spt-linux-guide.packages.${pkgs.system}.spt-launcher ];
+# Then just run `spt-launcher`
+```
+
+This is a thin convenience wrapper around `spt-additions run launcher`. It gets the full umu + Proton environment (with the NixOS steam-run FHS workaround when needed) so the Windows `SPT.Launcher.exe` runs correctly.
+
+Requires that SPT has already been installed (via `spt-additions` or the Lutris path).
+
+#### Home Manager module
+
+```nix
+# In your flake
+imports = [ inputs.spt-linux-guide.homeModules.spt ];
+
+# In your home.nix (or homeManagerConfiguration modules)
+programs.spt = {
+  enable = true;           # provides `spt-additions`
+  server.enable = true;    # provides `spt-server`
+  launcher.enable = true;  # provides `spt-launcher`
+};
+```
+
+For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so the package options resolve automatically from `pkgs`. See the detailed example in `flake.nix`.
+
+### Why a dev shell + flake-parts?
+
+- Reproducible environment for the script's native dependencies (especially the NixOS FHS/umu story).
+- Easy testing of installer changes without polluting your user profile.
+- `flake-parts` structure makes it clean to consume as an input today (`nix run input.#spt-additions`, `packages = [ input.packages.${system}.spt-server ]`, `homeModules.spt`, overlays, etc.). Home Manager module support is included (see above).
 - Shellcheck + syntax checks during development.
 
 ## Contributions

@@ -39,10 +39,10 @@
             dotnet-aspnetcore_9
           ];
 
-          # The three main runnable tools are defined in ./packages/*.nix for cleanliness.
-          sptServer = import ./packages/spt-server.nix { pkgs = pkgs'; lib = lib; };
-          sptAdditions = import ./packages/spt-additions.nix { pkgs = pkgs'; inherit coreScriptDeps; };
-          sptLauncher = import ./packages/spt-launcher.nix { pkgs = pkgs'; sptAdditions = sptAdditions; };
+          # The three main runnable tools are defined in ./nix/packages/*.nix for cleanliness.
+          sptServer = import ./nix/packages/spt-server.nix { pkgs = pkgs'; lib = lib; };
+          sptAdditions = import ./nix/packages/spt-additions.nix { pkgs = pkgs'; inherit coreScriptDeps; };
+          sptLauncher = import ./nix/packages/spt-launcher.nix { pkgs = pkgs'; sptAdditions = sptAdditions; };
 
         in
         {

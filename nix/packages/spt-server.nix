@@ -1,6 +1,6 @@
 # The spt-server launcher package.
 # Provides a hermetic DOTNET_ROOT and a nice Ctrl+C handler.
-{ pkgs, lib, media ? ../media }:
+{ pkgs, lib, media ? ../../media }:
 
 let
   serverScript = pkgs.writeShellScriptBin "spt-server" ''

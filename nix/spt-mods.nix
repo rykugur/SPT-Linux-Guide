@@ -3,7 +3,7 @@
 # and helpers to build individual mod packages (with dep resolution).
 #
 # Usage:
-#   let spt = import ./nix/spt-mods.nix { lib = pkgs.lib; }; in
+#   let spt = import ./nix { lib = pkgs.lib; }; in   # or import ./nix/spt-mods.nix
 #   spt.mkSptMods pkgs   # -> { uifixes = <drv>; sain = <drv>; ... }
 #
 # Or for a specific version:

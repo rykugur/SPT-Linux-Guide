@@ -7,7 +7,7 @@ pkgs.writeShellApplication {
   runtimeInputs = coreScriptDeps ++ [ (import ./spt-server.nix { inherit pkgs; lib = pkgs.lib; }) ];
   text = ''
     export DOTNET_ROOT="${pkgs.dotnet-aspnetcore_9}/share/dotnet"
-    exec ${../scripts/spt-additions} "$@"
+    exec ${../../scripts/spt-additions} "$@"
   '';
   meta = {
     description = "The SPT-Linux-Guide additions installer (native Linux path using umu/GE-Proton).";

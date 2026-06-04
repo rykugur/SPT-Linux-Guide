@@ -1,24 +1,16 @@
 # The development shell for the guide.
 # Provides tools for the spt-additions script and the mod system.
-{ pkgs, lib, coreScriptDeps, dotnet-aspnetcore_9, ... }:
+{ pkgs, lib, ... }:
+
+let
+  # Pull the (now single-source) core runtime deps via the nix/ entry point.
+  spt = import ./default.nix { inherit lib; };
+  coreScriptDeps = spt.mkCoreScriptDeps pkgs;
+in
 
 pkgs.mkShell {
-  packages = with pkgs; [
-    # Core script runtime (duplicated from coreScriptDeps for the shell experience)
-    umu-launcher
-    steam-run
-    jq
-    unixtools.xxd
-    python3
-    curl
-    p7zip
-    (pkgs.runCommand "7zzs" { } ''
-      mkdir -p $out/bin
-      ln -s ${lib.getExe p7zip} $out/bin/7zzs
-    '')
-    dotnet-aspnetcore_9
-
-    # Dev helpers
+  packages = coreScriptDeps ++ (with pkgs; [
+    # Dev-only helpers (not needed by the packaged scripts).
     shellcheck
     shfmt
     git
@@ -28,10 +20,10 @@ pkgs.mkShell {
     tree
     winetricks
     cabextract
-  ];
+  ]);
 
   env = {
-    DOTNET_ROOT = "${dotnet-aspnetcore_9}/share/dotnet";
+    DOTNET_ROOT = "${pkgs.dotnet-aspnetcore_9}/share/dotnet";
   };
 
   shellHook = ''

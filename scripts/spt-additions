@@ -1632,8 +1632,18 @@ opt_run() {
             check_eft_running
             msg "${BOLD}Launching SPT Server...${RESET}"
             cd "${CONFIG[spt-path]}" || exit
-            if check_legacy_installed; then m_umu "SPT.Server.exe" "$@"
-            else "./launch-server.sh" "$@" &>> "${LOG_PATH}"; fi
+            if check_legacy_installed; then
+              m_umu "SPT.Server.exe" "$@"
+            elif command -v spt-server &>/dev/null; then
+              # Prefer the dedicated direct launcher when available (e.g. when
+              # running via `nix run ...#spt-additions`, or when the user has
+              # installed the spt-server package). It is more reliable in
+              # restricted PATH environments and always attaches to the current
+              # terminal.
+              spt-server "$@"
+            else
+              "./launch-server.sh" "$@"
+            fi
         ;;
         "") err "Option \"run\" requires an argument" ;;
         *)

@@ -2,6 +2,8 @@
 
 **Status (post this session)**: Docs improved + script has basic awareness + steam-run auto-wrap (UMU_CMD) when available. README warning softened to informative NOTE. Wiki fully bootstrapped per llm-wiki skill (from dotfiles/modules/ai/skills/llm-wiki) and used to drive the changes. Full end-to-end user testing on real installs still needed. See "Changes Landed" section below + the raw session source.
 
+**Later update**: A practical distributable `spt-server` launcher + desktop entry was added to the flake (see "Packaged Launcher (2026 addition)" section). This makes `spt-server` (CLI or menu-launched) work on NixOS after the normal game install.
+
 **Status (pre this session)**: Partial / community-workaround only. Official warning in README links to stalled PR #14. Goal of current work: make `spt-additions` (native path) and docs "just work" with reasonable NixOS config + minimal script tweaks. Remove or heavily qualify the warning.
 
 ## Changes Landed (this WORK session)
@@ -103,7 +105,26 @@ See related entity pages and future edits:
 - Document `spt-additions run ...` under steam-run.
 - Possibly a `--nixos` mode or env var `SPT_NIXOS=1`.
 
-Longer term: A proper `sptarkov` package in nixpkgs or user's pkgs/ would be nice but is a lot of work (bundling the whole EFT+SPT, handling updates/patchers, server, launchers). Guide + script improvements are the practical first step.
+### Packaged Launcher (2026 addition)
+
+Instead of packaging the entire multi-GB EFT+SPT tree (which must live in user-writable location anyway, gets patched/updated by the installer, and contains proprietary assets), we now ship a tiny launcher via the repo's own flake:
+
+- `nix run github:MadByteDE/SPT-Linux-Guide#spt-server`
+- Or add `spt-linux-guide.packages.x86_64-linux.spt-server` to your `systemPackages` / `home.packages`.
+
+The package (`flake.nix` `packages.spt-server`):
+
+- Is a `symlinkJoin` containing a `writeShellScriptBin "spt-server"` + `share/applications/spt-server.desktop` + icon.
+- Bakes `DOTNET_ROOT` to the `dotnet-aspnetcore_9` (or equiv) from its nixpkgs pin. The server binary therefore "just works" on NixOS even if the user never set the session variable.
+- Re-uses the same install discovery as `just server` and the additions config (`~/.config/spt-additions/app.conf` `spt-path`, `SPTARKOV_PATH` override, `~/Games/SPTarkov` default).
+- The `.desktop` has `Terminal=true` + `Icon=spt_server` (the icon is vendored from the guide's media assets into hicolor so it resolves from any profile's share dir). This gives a proper menu entry that behaves like the old Lutris pre-launch script.
+- Still requires the user to have performed the (one-time) install of the actual game files via `spt-additions`, Lutris, etc. The launcher is only the "how do I start the native server reliably on this non-FHS system" piece.
+
+This directly addresses the "proper way ... package up the program as a nix package" comment from the original PR #14 discussion, in the scope that actually makes sense.
+
+Update your install of the guide (or just `nix run` the target) to get `spt-server` and the desktop entry.
+
+The old `launch-server.sh` (shipped into your SPT dir by the installer) continues to work for existing Lutris "pre-launch script" setups; the new packaged command is the recommended path for direct CLI / menu / systemd use on NixOS.
 
 ## Current Host Testing Notes (this machine)
 - Is NixOS 26.05 (BUILD_ID 26.05.20260523...).

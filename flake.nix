@@ -137,7 +137,7 @@
         };
 
         homeModules = {
-          spt = import ./modules/home-manager/spt.nix;
+          spt = import ./nix/modules/home-manager/spt.nix;
           default = self.homeModules.spt;
         };
 

@@ -159,10 +159,23 @@ programs.spt = {
   enable = true;           # provides `spt-additions`
   server.enable = true;    # provides `spt-server`
   launcher.enable = true;  # provides `spt-launcher`
+
+  # Individual mod packages (preferred approach)
+  mods = [
+    (inputs.spt-linux-guide.lib.mkSptMod {
+      pkgs = pkgs;
+      pname = "uifixes";
+      version = "5.3.9";
+      url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
+      hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
+    })
+  ];
 };
 ```
 
-For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so the package options resolve automatically from `pkgs`. See the detailed example in `flake.nix`.
+Mods are applied on home-manager activation by merging the `BepInEx/` and `SPT/` trees from each mod package into your SPTarkov directory (using rsync --ignore-existing to be non-destructive).
+
+For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so the package options resolve automatically from `pkgs`. See the detailed example in `flake.nix`. You can also define your own mods with `lib.mkSptMod` for any GitHub release (or custom fetchurl).
 
 ### Why a dev shell + flake-parts?
 

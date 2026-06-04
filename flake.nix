@@ -307,6 +307,16 @@ DESKTOP_EOF
       #           enable = true;
       #           server.enable = true;
       #           launcher.enable = true;
+      #           # Individual mod packages (using the lib helper)
+      #           mods = [
+      #             (inputs.spt-linux-guide.lib.mkSptMod {
+      #               pkgs = pkgs;
+      #               pname = "uifixes";
+      #               version = "5.3.9";
+      #               url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
+      #               hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
+      #             })
+      #           ];
       #         };
       #       }
       #     ];
@@ -320,6 +330,34 @@ DESKTOP_EOF
           spt-additions = self.packages.${final.system}.spt-additions;
           spt-server = self.packages.${final.system}.spt-server;
           spt-launcher = self.packages.${final.system}.spt-launcher;
+        };
+
+        lib = {
+          # Helper to define individual SPT mods as Nix packages.
+          # Each mod package should unpack to a tree containing BepInEx/ and/or
+          # SPT/ directories (the standard merge layout for SPT mods).
+          # Usage in your flake:
+          #   sptMods.uifixes = inputs.spt-linux-guide.lib.mkSptMod {
+          #     pkgs = pkgs;
+          #     pname = "uifixes";
+          #     version = "5.3.9";
+          #     url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
+          #     hash = "sha256-...";
+          #   };
+          mkSptMod = { pkgs, pname, version, url, hash, ... }:
+            pkgs.stdenv.mkDerivation {
+              inherit pname version;
+              src = pkgs.fetchurl { inherit url hash; };
+              nativeBuildInputs = [ pkgs.p7zip ];
+              installPhase = ''
+                mkdir -p $out
+                7zz x $src -o$out
+              '';
+              meta = {
+                description = "SPT mod: ${pname}";
+                homepage = "https://github.com/tyfon7/${pname}"; # best effort
+              };
+            };
         };
 
         homeModules = {

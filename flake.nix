@@ -309,34 +309,45 @@ DESKTOP_EOF
       #           launcher.enable = true;
       #
       #           # Individual mod packages using the lib helper.
+      #           # Supports .zip, .7z, .tar, .tar.gz etc.
       #           # Only list "root" mods; their declared dependencies are
-      #           # automatically included in the merge.
+      #           # automatically included in the merge (see passthru.dependencies).
       #           let
+      #             uifixes = inputs.spt-linux-guide.lib.mkSptMod {
+      #               pkgs = pkgs;
+      #               pname = "uifixes";
+      #               version = "5.3.9";
+      #               url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
+      #               hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
+      #             };
       #             bigbrain = inputs.spt-linux-guide.lib.mkSptMod {
       #               pkgs = pkgs;
       #               pname = "bigbrain";
       #               version = "1.4.0";
       #               url = "https://github.com/DrakiaXYZ/SPT-BigBrain/releases/download/1.4.0/DrakiaXYZ-BigBrain-1.4.0.7z";
-      #               hash = "sha256-...";
+      #               hash = "sha256-0y9hzbbgnfqd5b8lgh8lifzak2h5iak778pbk08258782klzk384";
+      #               homepage = "https://github.com/DrakiaXYZ/SPT-BigBrain";
       #             };
       #             waypoints = inputs.spt-linux-guide.lib.mkSptMod {
       #               pkgs = pkgs;
       #               pname = "waypoints";
       #               version = "1.8.2";
       #               url = "https://github.com/DrakiaXYZ/SPT-Waypoints/releases/download/1.8.2/DrakiaXYZ-Waypoints-1.8.2.7z";
-      #               hash = "sha256-...";
+      #               hash = "sha256-17siqdnyjsf7cl8qh9djmgbh9vq197mq1wwvlk1hiyvsvh35z1gl";
+      #               homepage = "https://github.com/DrakiaXYZ/SPT-Waypoints";
       #             };
       #             sain = inputs.spt-linux-guide.lib.mkSptMod {
       #               pkgs = pkgs;
       #               pname = "sain";
       #               version = "4.4.3";
       #               url = "https://github.com/ArchangelWTF/SAIN/releases/download/v4.4.3/SAIN.4.4.3.zip";
-      #               hash = "sha256-...";
+      #               hash = "sha256-03iwalv2byvypymvmbrpk4pk518rhdjybp6ny8iasqp4gca2rap9";
+      #               homepage = "https://github.com/ArchangelWTF/SAIN";
       #               dependencies = [ bigbrain waypoints ];
       #             };
       #           in
       #           {
-      #             mods = [ sain ];  # deps pulled in automatically
+      #             mods = [ uifixes sain ];  # deps for SAIN pulled in automatically
       #           };
       #         };
       #       }
@@ -357,30 +368,42 @@ DESKTOP_EOF
           # Helper to define individual SPT mods as Nix packages.
           # Each mod package should unpack to a tree containing BepInEx/ and/or
           # SPT/ directories (the standard merge layout for SPT mods).
-          # Usage in your flake:
+          # Usage in your flake (supports zip, 7z, tar, tar.gz etc.):
           #   sptMods.uifixes = inputs.spt-linux-guide.lib.mkSptMod {
           #     pkgs = pkgs;
           #     pname = "uifixes";
           #     version = "5.3.9";
           #     url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-          #     hash = "sha256-...";
+          #     hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
           #   };
-          mkSptMod = { pkgs, pname, version, url, hash, dependencies ? [], ... }:
+          mkSptMod = { pkgs, pname, version, url, hash, dependencies ? [], homepage ? "https://github.com/${pname}", ... }:
             let
               mod = pkgs.stdenv.mkDerivation {
                 inherit pname version;
                 src = pkgs.fetchurl { inherit url hash; };
-                nativeBuildInputs = [ pkgs.p7zip ];
+                dontUnpack = true;
+                nativeBuildInputs = with pkgs; [ p7zip gnutar gzip bzip2 xz ];
                 installPhase = ''
                   mkdir -p $out
-                  7zz x $src -o$out
+                  case "$src" in
+                    *.zip|*.7z)
+                      7zz x "$src" -o$out
+                      ;;
+                    *.tar|*.tar.gz|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz)
+                      tar -xf "$src" -C $out
+                      ;;
+                    *)
+                      echo "Unsupported archive type for $src"
+                      exit 1
+                      ;;
+                  esac
                 '';
                 passthru = {
                   inherit dependencies;
                 };
                 meta = {
                   description = "SPT mod: ${pname}";
-                  homepage = "https://github.com/tyfon7/${pname}"; # best effort, override in call if needed
+                  inherit homepage;
                 };
               };
             in mod;

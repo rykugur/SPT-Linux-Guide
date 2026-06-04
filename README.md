@@ -150,6 +150,8 @@ Requires that SPT has already been installed (via `spt-additions` or the Lutris 
 
 Mod dependencies are supported declaratively. When you list a mod (e.g. SAIN) in `programs.spt.mods`, its `dependencies` (BigBrain, Waypoints, ...) are automatically included in the merge via the package's `passthru.dependencies`. See the detailed example in `flake.nix` using `lib.mkSptMod { dependencies = [ ... ]; }`.
 
+`mkSptMod` supports common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. (the four example mods above are included with current releases).
+
 #### Home Manager module
 
 ```nix

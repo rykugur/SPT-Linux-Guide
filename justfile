@@ -38,6 +38,8 @@ shell:
 # Run the SPT server directly in the current terminal (best for seeing errors on NixOS)
 # It tries to find the install path from the script's config file first.
 server:
+    #!/usr/bin/env bash
+    set -euo pipefail
     CONFIG_FILE="$HOME/.config/spt-additions/app.conf"
     SPT_DIR=""
     if [ -f "$CONFIG_FILE" ]; then

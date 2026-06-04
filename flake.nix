@@ -47,6 +47,10 @@
               file
               which
               tree
+
+              # For winetricks (used by the script for dotnet48, vcrun etc.)
+              winetricks
+              cabextract
             ];
 
             shellHook = ''

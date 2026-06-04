@@ -148,9 +148,9 @@ This is a thin convenience wrapper around `spt-additions run launcher`. It gets 
 
 Requires that SPT has already been installed (via `spt-additions` or the Lutris path).
 
-Mod dependencies are supported declaratively. When you list a mod (e.g. SAIN) in `programs.spt.mods`, its `dependencies` (BigBrain, Waypoints, ...) are automatically included in the merge via the package's `passthru.dependencies`. See the detailed example in `flake.nix` using `lib.mkSptMod { dependencies = [ ... ]; }`.
+Mod dependencies are supported declaratively via `passthru.dependencies` in the mod packages. The `sptMods` attrset (for the flake's `supportedSptVersion`) automatically resolves the full closure when you list root mods like `sain` (it pulls `bigbrain` and `waypoints`).
 
-`mkSptMod` supports common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. (the four example mods above are included with current releases).
+See the detailed example in `flake.nix`. `mkSptMod` (and the pre-built `sptMods`) support common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. The four example mods (UIFixes, SAIN, BigBrain, Waypoints) are kept up to date for the current SPT version in the flake.
 
 #### Home Manager module
 
@@ -164,22 +164,18 @@ programs.spt = {
   server.enable = true;    # provides `spt-server`
   launcher.enable = true;  # provides `spt-launcher`
 
-  # Individual mod packages (preferred approach)
-  mods = [
-    (inputs.spt-linux-guide.lib.mkSptMod {
-      pkgs = pkgs;
-      pname = "uifixes";
-      version = "5.3.9";
-      url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-      hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
-    })
+  # Use the versioned mod packages for the flake's supported SPT version (4.0.13).
+  # Dependencies (e.g. for SAIN) are automatically pulled in.
+  mods = with inputs.spt-linux-guide.packages.${pkgs.system}.sptMods; [
+    uifixes
+    sain
   ];
 };
 ```
 
 Mods are applied on home-manager activation by merging the `BepInEx/` and `SPT/` trees from each mod package into your SPTarkov directory (using rsync --ignore-existing to be non-destructive).
 
-For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so the package options resolve automatically from `pkgs`. See the detailed example in `flake.nix`. You can also define your own mods with `lib.mkSptMod` for any GitHub release (or custom fetchurl).
+For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so `sptMods` and the package options resolve automatically from `pkgs` (e.g. `pkgs.sptMods.sain`). See the detailed example in `flake.nix`. You can also define your own mods with `lib.mkSptMod` for any version or GitHub release (or custom fetchurl), and the module will handle merging + dep resolution.
 
 ### Why a dev shell + flake-parts?
 

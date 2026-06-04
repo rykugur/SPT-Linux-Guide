@@ -7,6 +7,91 @@
   };
 
   outputs = inputs@{ flake-parts, self, ... }:
+    let
+      supportedSptVersion = "4.0.13";
+
+      # Map from SPT version to the mod info (version, url, hash, optional dependencies list).
+      # Update this manually when bumping the supported SPT version.
+      # Each entry uses the lib.mkSptMod under the hood to create the package.
+      sptModVersions = {
+        "4.0.13" = {
+          uifixes = {
+            version = "5.3.9";
+            url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
+            hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
+          };
+          bigbrain = {
+            version = "1.4.0";
+            url = "https://github.com/DrakiaXYZ/SPT-BigBrain/releases/download/1.4.0/DrakiaXYZ-BigBrain-1.4.0.7z";
+            hash = "sha256-0y9hzbbgnfqd5b8lgh8lifzak2h5iak778pbk08258782klzk384";
+          };
+          waypoints = {
+            version = "1.8.2";
+            url = "https://github.com/DrakiaXYZ/SPT-Waypoints/releases/download/1.8.2/DrakiaXYZ-Waypoints-1.8.2.7z";
+            hash = "sha256-17siqdnyjsf7cl8qh9djmgbh9vq197mq1wwvlk1hiyvsvh35z1gl";
+          };
+          sain = {
+            version = "4.4.3";
+            url = "https://github.com/ArchangelWTF/SAIN/releases/download/v4.4.3/SAIN.4.4.3.zip";
+            hash = "sha256-03iwalv2byvypymvmbrpk4pk518rhdjybp6ny8iasqp4gca2rap9";
+            dependencies = [ "bigbrain" "waypoints" ];
+          };
+        };
+        # Add future SPT versions here, e.g.
+        # "4.1.0" = { ... updated mod versions for 4.1.0 ... };
+      };
+
+      mkSptMod = { pkgs, pname, version, url, hash, dependencies ? [], homepage ? "https://github.com/${pname}" }:
+        pkgs.stdenv.mkDerivation {
+          inherit pname version;
+          src = pkgs.fetchurl { inherit url hash; };
+          dontUnpack = true;
+          nativeBuildInputs = with pkgs; [ p7zip gnutar gzip bzip2 xz ];
+          installPhase = ''
+            mkdir -p $out
+            case "$src" in
+              *.zip|*.7z)
+                7zz x "$src" -o$out
+                ;;
+              *.tar|*.tar.gz|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz)
+                tar -xf "$src" -C $out
+                ;;
+              *)
+                echo "Unsupported archive type for $src"
+                exit 1
+                ;;
+            esac
+          '';
+          passthru = {
+            inherit dependencies;
+          };
+          meta = {
+            description = "SPT mod: ${pname}";
+            inherit homepage;
+          };
+        };
+
+      mkSptMods = pkgs: sptVersion:
+        let
+          l = pkgs.lib;
+          vers = sptModVersions.${sptVersion} or (throw "No mod versions defined for SPT ${sptVersion}. Supported versions: ${l.concatStringsSep ", " (l.attrNames sptModVersions)}");
+          base = l.mapAttrs (pname: info:
+            mkSptMod {
+              inherit pkgs pname;
+              inherit (info) version url hash;
+            }
+          ) vers;
+          final = l.mapAttrs (pname: info:
+            let
+              depNames = info.dependencies or [];
+              deps = map (d: final.${d}) depNames;
+            in
+              base.${pname} // {
+                passthru = (base.${pname}.passthru or {}) // { dependencies = deps; };
+              }
+          ) vers;
+        in final;
+    in
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" "aarch64-linux" ];
 
@@ -255,6 +340,7 @@ DESKTOP_EOF
               echo "  nix run .#spt-additions   # the installer"
               echo "  nix run .#spt-server      # the dedicated server"
               echo "  nix run .#spt-launcher    # the SPT client/launcher GUI"
+              echo "  Use lib.mkSptMods for versioned mods (e.g. (lib.mkSptMods pkgs).sain )"
             '';
           };
 
@@ -308,46 +394,16 @@ DESKTOP_EOF
       #           server.enable = true;
       #           launcher.enable = true;
       #
-      #           # Individual mod packages using the lib helper.
-      #           # Supports .zip, .7z, .tar, .tar.gz etc.
-      #           # Only list "root" mods; their declared dependencies are
-      #           # automatically included in the merge (see passthru.dependencies).
+      #           # Use lib.mkSptMods for the flake's supported SPT version.
+      #           # Dependencies are automatically resolved and included.
       #           let
-      #             uifixes = inputs.spt-linux-guide.lib.mkSptMod {
-      #               pkgs = pkgs;
-      #               pname = "uifixes";
-      #               version = "5.3.9";
-      #               url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-      #               hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
-      #             };
-      #             bigbrain = inputs.spt-linux-guide.lib.mkSptMod {
-      #               pkgs = pkgs;
-      #               pname = "bigbrain";
-      #               version = "1.4.0";
-      #               url = "https://github.com/DrakiaXYZ/SPT-BigBrain/releases/download/1.4.0/DrakiaXYZ-BigBrain-1.4.0.7z";
-      #               hash = "sha256-0y9hzbbgnfqd5b8lgh8lifzak2h5iak778pbk08258782klzk384";
-      #               homepage = "https://github.com/DrakiaXYZ/SPT-BigBrain";
-      #             };
-      #             waypoints = inputs.spt-linux-guide.lib.mkSptMod {
-      #               pkgs = pkgs;
-      #               pname = "waypoints";
-      #               version = "1.8.2";
-      #               url = "https://github.com/DrakiaXYZ/SPT-Waypoints/releases/download/1.8.2/DrakiaXYZ-Waypoints-1.8.2.7z";
-      #               hash = "sha256-17siqdnyjsf7cl8qh9djmgbh9vq197mq1wwvlk1hiyvsvh35z1gl";
-      #               homepage = "https://github.com/DrakiaXYZ/SPT-Waypoints";
-      #             };
-      #             sain = inputs.spt-linux-guide.lib.mkSptMod {
-      #               pkgs = pkgs;
-      #               pname = "sain";
-      #               version = "4.4.3";
-      #               url = "https://github.com/ArchangelWTF/SAIN/releases/download/v4.4.3/SAIN.4.4.3.zip";
-      #               hash = "sha256-03iwalv2byvypymvmbrpk4pk518rhdjybp6ny8iasqp4gca2rap9";
-      #               homepage = "https://github.com/ArchangelWTF/SAIN";
-      #               dependencies = [ bigbrain waypoints ];
-      #             };
+      #             spt = inputs.spt-linux-guide;
       #           in
       #           {
-      #             mods = [ uifixes sain ];  # deps for SAIN pulled in automatically
+      #             mods = with (spt.lib.mkSptMods pkgs spt.supportedSptVersion); [
+      #               uifixes
+      #               sain  # pulls in bigbrain + waypoints automatically
+      #             ];
       #           };
       #         };
       #       }
@@ -362,51 +418,11 @@ DESKTOP_EOF
           spt-additions = self.packages.${final.system}.spt-additions;
           spt-server = self.packages.${final.system}.spt-server;
           spt-launcher = self.packages.${final.system}.spt-launcher;
+          sptMods = self.lib.mkSptMods final self.supportedSptVersion;
         };
 
         lib = {
-          # Helper to define individual SPT mods as Nix packages.
-          # Each mod package should unpack to a tree containing BepInEx/ and/or
-          # SPT/ directories (the standard merge layout for SPT mods).
-          # Usage in your flake (supports zip, 7z, tar, tar.gz etc.):
-          #   sptMods.uifixes = inputs.spt-linux-guide.lib.mkSptMod {
-          #     pkgs = pkgs;
-          #     pname = "uifixes";
-          #     version = "5.3.9";
-          #     url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-          #     hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
-          #   };
-          mkSptMod = { pkgs, pname, version, url, hash, dependencies ? [], homepage ? "https://github.com/${pname}", ... }:
-            let
-              mod = pkgs.stdenv.mkDerivation {
-                inherit pname version;
-                src = pkgs.fetchurl { inherit url hash; };
-                dontUnpack = true;
-                nativeBuildInputs = with pkgs; [ p7zip gnutar gzip bzip2 xz ];
-                installPhase = ''
-                  mkdir -p $out
-                  case "$src" in
-                    *.zip|*.7z)
-                      7zz x "$src" -o$out
-                      ;;
-                    *.tar|*.tar.gz|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz)
-                      tar -xf "$src" -C $out
-                      ;;
-                    *)
-                      echo "Unsupported archive type for $src"
-                      exit 1
-                      ;;
-                  esac
-                '';
-                passthru = {
-                  inherit dependencies;
-                };
-                meta = {
-                  description = "SPT mod: ${pname}";
-                  inherit homepage;
-                };
-              };
-            in mod;
+          inherit mkSptMod mkSptMods supportedSptVersion sptModVersions;
         };
 
         homeModules = {

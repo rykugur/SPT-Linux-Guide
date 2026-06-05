@@ -122,9 +122,36 @@ You can also call `mkSptPackages` / `mkCoreScriptDeps` / import the raw package 
 
 - `nix flake check`
 - `nix build .#spt-server .#spt-additions .#spt-launcher`
+- `nix build .#legacyPackages.x86_64-linux.sptMods.sain` (easy `result` symlink for any mod)
 - `nix run .#spt-server`
 - `nix develop` (or direnv) gives you the full script environment + linters.
 - `just` targets (see root justfile) for common tasks.
+
+### Inspecting mod content (the "how files get into place" part)
+
+The mod packages (built by `mkSptMod` / `mkSptMods`) are just derivations whose `$out` contains the `BepInEx/` and/or `SPT/` trees extracted from the release. These are what the HM module (or you manually) rsync into your live `~/Games/SPTarkov`.
+
+To get an easy-to-find `result` symlink **without** memorizing long `/nix/store/...` hashes:
+
+```bash
+# Build one (or more) and get ./result (or result-1, ...)
+# (We use legacyPackages because flake-parts expects `packages.*` entries
+# to be single derivations, not attrsets.)
+nix build .#legacyPackages.x86_64-linux.sptMods.sain .#legacyPackages.x86_64-linux.sptMods.uifixes
+
+ls -l result
+realpath result
+find result -type f | head -10
+
+# Or from a flake input (no clone needed)
+nix build github:MadByteDE/SPT-Linux-Guide#legacyPackages.x86_64-linux.sptMods.sain
+
+# Even nicer once the overlay is active in your config:
+#   nix build nixpkgs#sptMods.sain
+# (or just use pkgs.sptMods.sain in your expressions)
+```
+
+The HM module does the equivalent of the rsync for you automatically on activation (see the `applySptMods` activation script and `resolveModClosure`).
 
 When you change `spt-mods.nix` hashes or add mods, the builds are pure and will fail fast on bad hashes.
 

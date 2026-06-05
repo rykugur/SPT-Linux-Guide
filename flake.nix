@@ -29,6 +29,15 @@
 
           packages = sptPkgs;
 
+          legacyPackages = {
+            # Mods live here (not under `packages` because flake-parts types
+            # `packages.*` as single derivations). This lets you do:
+            #   nix build .#legacyPackages.x86_64-linux.sptMods.sain
+            # which gives you a convenient `result` symlink without needing
+            # the full /nix/store/... hash upfront.
+            sptMods = spt.mkSptMods pkgs' spt.supportedSptVersion;
+          };
+
           apps = {
             spt-additions = { type = "app"; program = lib.getExe sptPkgs.spt-additions; };
             spt-server    = { type = "app"; program = lib.getExe sptPkgs.spt-server; };

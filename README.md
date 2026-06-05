@@ -150,7 +150,7 @@ Requires that SPT has already been installed (via `spt-additions` or the Lutris 
 
 Mod dependencies are supported declaratively via `passthru.dependencies` in the mod packages. The `sptMods` attrset (for the flake's `supportedSptVersion`) automatically resolves the full closure when you list root mods like `sain` (it pulls `bigbrain` and `waypoints`).
 
-See the detailed example in `flake.nix`. `mkSptMod` (and the pre-built `sptMods`) support common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. The four example mods (UIFixes, SAIN, BigBrain, Waypoints) are kept up to date for the current SPT version in the flake.
+See `nix/README.md` for details. `mkSptMod` (and the pre-built `sptMods` via the overlay or `lib.mkSptMods`) support common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. The four example mods (UIFixes, SAIN, BigBrain, Waypoints) are kept up to date for the current SPT version in the flake.
 
 #### Home Manager module
 
@@ -166,16 +166,22 @@ programs.spt = {
 
   # Use the versioned mod packages for the flake's supported SPT version (4.0.13).
   # Dependencies (e.g. for SAIN) are automatically pulled in.
-  mods = with inputs.spt-linux-guide.packages.${pkgs.system}.sptMods; [
+  #
+  # Preferred: use the lib (works without the overlay)
+  mods = with (inputs.spt-linux-guide.lib.mkSptMods pkgs
+                 inputs.spt-linux-guide.lib.supportedSptVersion); [
     uifixes
-    sain
+    sain   # automatically pulls in bigbrain + waypoints
   ];
+
+  # Nicer (after you also add the overlay to nixpkgs.overlays):
+  # mods = with pkgs.sptMods; [ uifixes sain ];
 };
 ```
 
 Mods are applied on home-manager activation by merging the `BepInEx/` and `SPT/` trees from each mod package into your SPTarkov directory (using rsync --ignore-existing to be non-destructive).
 
-For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so `sptMods` and the package options resolve automatically from `pkgs` (e.g. `pkgs.sptMods.sain`). See the detailed example in `flake.nix`. You can also define your own mods with `lib.mkSptMod` for any version or GitHub release (or custom fetchurl), and the module will handle merging + dep resolution.
+For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so `sptMods` and the package options resolve automatically from `pkgs` (e.g. `pkgs.sptMods.sain`). See `nix/README.md` (and the module source) for the full details on declarative mods, dependency handling, and usage as a flake input. You can also define your own mods with `lib.mkSptMod` for any version or GitHub release (or custom fetchurl), and the module will handle merging + dep resolution.
 
 ### Why a dev shell + flake-parts?
 

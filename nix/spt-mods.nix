@@ -22,22 +22,22 @@ rec {
       uifixes = {
         version = "5.3.9";
         url = "https://github.com/tyfon7/UIFixes/releases/download/v5.3.9/Tyfon-UIFixes-5.3.9.zip";
-        hash = "sha256-17pkai6lyzwr7q8124vhq20zv45py34m5627krhh9xvj49k88cv3";
+        hash = "sha256-YzOEZiJy9wRhnkeYUsnwt5D9gcBwExEQPpl/T01U854=";
       };
       bigbrain = {
         version = "1.4.0";
         url = "https://github.com/DrakiaXYZ/SPT-BigBrain/releases/download/1.4.0/DrakiaXYZ-BigBrain-1.4.0.7z";
-        hash = "sha256-0y9hzbbgnfqd5b8lgh8lifzak2h5iak778pbk08258782klzk384";
+        hash = "sha256-BI356RTooCIQmOuic6aKBYqpvosUwUfRKg07+9b6MHk=";
       };
       waypoints = {
         version = "1.8.2";
         url = "https://github.com/DrakiaXYZ/SPT-Waypoints/releases/download/1.8.2/DrakiaXYZ-Waypoints-1.8.2.7z";
-        hash = "sha256-17siqdnyjsf7cl8qh9djmgbh9vq197mq1wwvlk1hiyvsvh35z1gl";
+        hash = "sha256-9IVfBtx6+wjDpJvzgOtJAe8E16uyJYgRZcdp6W3DUZ8=";
       };
       sain = {
         version = "4.4.3";
         url = "https://github.com/ArchangelWTF/SAIN/releases/download/v4.4.3/SAIN.4.4.3.zip";
-        hash = "sha256-03iwalv2byvypymvmbrpk4pk518rhdjybp6ny8iasqp4gca2rap9";
+        hash = "sha256-6aosFHvkYq0i8tbc5WWDGYUyL5k3r7qrv377JTZVPA4=";
         dependencies = [ "bigbrain" "waypoints" ];
       };
     };
@@ -56,7 +56,7 @@ rec {
       inherit pname version;
       src = pkgs.fetchurl { inherit url hash; };
       dontUnpack = true;
-      nativeBuildInputs = with pkgs; [ p7zip gnutar gzip bzip2 xz ];
+      nativeBuildInputs = with pkgs; [ _7zz gnutar gzip bzip2 xz ];
       installPhase = ''
         mkdir -p $out
         case "$src" in

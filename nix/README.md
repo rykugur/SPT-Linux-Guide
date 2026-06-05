@@ -1,16 +1,26 @@
 # nix/
 
-Internal structure for the flake (and for direct consumption via `import ./nix`).
+Internal helpers for the **runnable artifacts** exposed by this flake
+(spt-additions, spt-server, spt-launcher + dev shell).
 
-The goal is to keep `flake.nix` tiny (just systems + perSystem wiring + the `flake.*` outputs) while everything else lives here as reusable, importable pieces.
+As of the recent changes, this repository's flake concerns itself **only**
+with these runnable tools. The declarative mod builders and Home Manager
+module are no longer part of the published flake outputs (`lib`, `homeModules`,
+overlay `sptMods`, etc.).
+
+The files under `nix/` (especially `spt-mods.nix` and `modules/home-manager/spt.nix`)
+remain in the source tree as reference / copy-paste starting points. You are
+expected to maintain your own version of the mod map + module in your personal
+configuration flake (e.g. `~/.dotfiles/flake.nix`), importing *this* flake
+only to obtain the launcher packages.
 
 ## Layout
 
 ```
 nix/
-├── default.nix          # Public entry point (re-exports + helpers). `import ./nix { inherit lib; }`
+├── default.nix          # Helpers for the tools only (mkCoreScriptDeps, mkSptPackages, etc.)
 ├── README.md            # This file.
-├── spt-mods.nix         # Pure data + builders for declarative mods.
+├── spt-mods.nix         # (Reference) Pure data + builders for declarative mods. Not wired into the flake anymore.
 ├── devshell.nix         # The `nix develop` / direnv shell.
 ├── packages/
 │   ├── spt-server.nix   # Hermetic spt-server (DOTNET_ROOT + desktop file + icon + signal handling).
@@ -18,56 +28,21 @@ nix/
 │   └── spt-launcher.nix # Thin wrapper: `spt-additions run launcher`.
 └── modules/
     └── home-manager/
-        └── spt.nix      # HM module: packages + DOTNET_ROOT + declarative mod merging via rsync.
+        └── spt.nix      # (Reference) Old HM module. Not exported from the flake.
 ```
 
-## default.nix (the key to a short flake.nix)
+## default.nix
 
-`import ./nix { inherit lib; }` gives you:
+`import ./nix { inherit lib; }` now gives you only the tool-related helpers:
 
-- Everything from `spt-mods.nix` at the top level (`supportedSptVersion`, `mkSptMod`, `mkSptMods`, `sptModVersions`).
-- `mkCoreScriptDeps pkgs` — the list of native tools (umu, steam-run, 7zzs, dotnet-9, jq, ...). Single source of truth.
-- `packageDefs` — attrset of paths to the individual package expressions.
-- `mkSptPackages pkgs lib` — returns `{ spt-server, spt-additions, spt-launcher, default = spt-server; }` ready for `perSystem.packages`.
-- `devshell` — path to the devshell expression.
-- `modules.homeManager` — path to the home-manager module.
+- `mkCoreScriptDeps pkgs`
+- `packageDefs`
+- `mkSptPackages pkgs lib` → the three runnables + `default`
+- `devshell`
 
-This lets flake.nix do the absolute minimum of `let spt = import ./nix ...; ... packages = spt.mkSptPackages ...;`
+This keeps the perSystem wiring in `flake.nix` tiny and focused on runnables.
 
-## Mods (spt-mods.nix)
-
-### Supported SPT version + the version map
-
-```nix
-supportedSptVersion = "4.0.13";
-sptModVersions = {
-  "4.0.13" = {
-    uifixes = { version = "..."; url = "..."; hash = "..."; };
-    sain    = { version = "..."; url = "..."; hash = "..."; dependencies = [ "bigbrain" "waypoints" ]; ... };
-    ...
-  };
-  # "4.1.0" = { ... };   # future versions live here too
-};
-```
-
-- Bump `supportedSptVersion` (and add/update the map entry) manually when we decide to track a new SPT release.
-- The map lets you ask for the correct mod versions for a given SPT (e.g. `mkSptMods pkgs "4.0.13"`).
-- Hashes are SRI (`sha256-...`). Obtain with:
-  - `nix store prefetch-file --json <url> | jq -r .hash`
-  - or `nix-prefetch-url --unpack <url>` (then convert to SRI if needed).
-
-### mkSptMod / mkSptMods + dependency handling
-
-- `mkSptMod` takes a release archive (zip/7z/tar/tar.gz/... supported via `7zz` or `tar`), unpacks it into `$out` (so the result contains `BepInEx/` and/or `SPT/` trees), and stashes `passthru.dependencies`.
-- `mkSptMods pkgs sptVersion` builds the whole attrset for that version and then walks the declared `dependencies = [ "name" ... ]` (string names) to attach real drvs (deps first).
-- The resulting packages have `passthru.dependencies = [ <drv> <drv> ... ]`.
-- The HM module (and any future "apply" tool) uses a small `resolveModClosure` walker that flattens the transitive set (deduped, deps-first order) so base frameworks are merged before the mods that need them.
-
-Example of a dep chain today: `sain` → `bigbrain`, `waypoints`.
-
-You can also define your own ad-hoc mods anywhere with `mkSptMod` (point at any GitHub release or even a local tarball via `builtins.fetchurl` etc.).
-
-## Packages
+## Packages (the focus of this flake)
 
 Each `packages/*.nix` returns a derivation (usually via `writeShellApplication` or `symlinkJoin` for the desktop bits).
 
@@ -75,91 +50,66 @@ Each `packages/*.nix` returns a derivation (usually via `writeShellApplication` 
 - `spt-additions.nix` deliberately does a relative `import ./spt-server.nix` so that `spt-additions run server` can exec the dedicated launcher (and gets it in the closure).
 - Desktop icon + .desktop for `spt-server` live under the media tree; the path is passed explicitly from `mkSptPackages` (and has a `../../media` default inside the package file that works because of the layout under `nix/`).
 
-To add a new first-class tool:
+To add a new first-class runnable tool:
 
-1. Add `nix/packages/my-tool.nix` (takes `{ pkgs, ... }` or whatever it needs).
+1. Add `nix/packages/my-tool.nix`.
 2. Add it to `packageDefs` and `mkSptPackages` in `default.nix`.
-3. (Optional) expose under `apps` in the flake if you want `nix run .#my-tool`.
-4. Add to devshell if developers need it while hacking the guide.
-5. Document in the top-level README.
+3. (Optional) expose under `apps` in the flake.
+4. Add to devshell if needed for hacking.
+5. Update docs.
 
-## Home Manager module
+## Mods and Home Manager module (now reference material only)
 
-See `modules/home-manager/spt.nix`. Key points:
+The files `spt-mods.nix` and `modules/home-manager/spt.nix` are **no longer exported** via the flake (`lib`, `homeModules`, `overlays.*.sptMods`, etc.).
 
-- `programs.spt.enable`, `.server.enable`, `.launcher.enable` pull in the packages (respecting overrides and the overlay).
-- `programs.spt.mods = [ sain uifixes ... ];` (or `pkgs.sptMods.sain` after the overlay) — the module resolves the full closure and does a non-destructive `rsync -a --ignore-existing` of the `BepInEx/` and `SPT/` trees into `~/Games/SPTarkov` on activation.
-- This preserves the "mutable SPT + user data" model while still giving you declarative, reproducible, version-pinned mods from Nix.
-- `DOTNET_ROOT` is also managed (can be disabled).
+They are kept in the tree because the mod installation pattern (extract archive → merge BepInEx/ + SPT/ trees into a mutable `~/Games/SPTarkov`) and the activation-time rsync approach are still useful.
 
-## Using this as a flake input (the whole point)
+If you want declarative mods + an HM module, copy/adapt the logic into your personal flake (e.g. `~/.dotfiles/nix/spt-mods.nix` and your own `programs.spt` module) while importing *this* flake to get the underlying `spt-server` / `spt-additions` packages.
+
+See the files themselves for the previous implementation details (version map, passthru.dependencies, resolveModClosure, rsync --ignore-existing, etc.).
+
+## Using this as a flake input
 
 ```nix
 # your flake
 inputs.spt-linux-guide.url = "github:MadByteDE/SPT-Linux-Guide";
 
-# then
+# then (only the runnables)
 nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];
 
-# packages
-environment.systemPackages = [ pkgs.spt-server ];
-
-# or via home-manager
-imports = [ inputs.spt-linux-guide.homeModules.spt ];
-
-programs.spt = {
-  enable = true;
-  server.enable = true;
-  mods = with (inputs.spt-linux-guide.lib.mkSptMods pkgs inputs.spt-linux-guide.lib.supportedSptVersion); [
-    sain   # pulls bigbrain + waypoints for you
-  ];
-};
+environment.systemPackages = [
+  pkgs.spt-additions
+  pkgs.spt-server
+  pkgs.spt-launcher
+];
 ```
 
-You can also call `mkSptPackages` / `mkCoreScriptDeps` / import the raw package files directly if you want to build your own wrappers.
+You can still call `mkSptPackages` / `mkCoreScriptDeps` / import the raw `packageDefs` directly if you want to build your own wrappers in your config.
+
+(The old `lib.mkSptMods`, `homeModules.spt`, and `pkgs.sptMods` are no longer provided by this flake.)
 
 ## Development / testing
 
 - `nix flake check`
 - `nix build .#spt-server .#spt-additions .#spt-launcher`
-- `nix build .#legacyPackages.x86_64-linux.sptMods.sain` (easy `result` symlink for any mod)
 - `nix run .#spt-server`
 - `nix develop` (or direnv) gives you the full script environment + linters.
 - `just` targets (see root justfile) for common tasks.
 
-### Inspecting mod content (the "how files get into place" part)
-
-The mod packages (built by `mkSptMod` / `mkSptMods`) are just derivations whose `$out` contains the `BepInEx/` and/or `SPT/` trees extracted from the release. These are what the HM module (or you manually) rsync into your live `~/Games/SPTarkov`.
-
-To get an easy-to-find `result` symlink **without** memorizing long `/nix/store/...` hashes:
+When working on the mod-related reference files (`spt-mods.nix` etc.), you can still build them directly with `--expr` for testing:
 
 ```bash
-# Build one (or more) and get ./result (or result-1, ...)
-# (We use legacyPackages because flake-parts expects `packages.*` entries
-# to be single derivations, not attrsets.)
-nix build .#legacyPackages.x86_64-linux.sptMods.sain .#legacyPackages.x86_64-linux.sptMods.uifixes
-
-ls -l result
-realpath result
-find result -type f | head -10
-
-# Or from a flake input (no clone needed)
-nix build github:MadByteDE/SPT-Linux-Guide#legacyPackages.x86_64-linux.sptMods.sain
-
-# Even nicer once the overlay is active in your config:
-#   nix build nixpkgs#sptMods.sain
-# (or just use pkgs.sptMods.sain in your expressions)
+NIXPKGS_ALLOW_UNFREE=1 nix build --impure --expr '
+  let
+    f = builtins.getFlake (toString ./.);
+    pkgs = import <nixpkgs> { system = "x86_64-linux"; config.allowUnfree = true; };
+  in (import ./nix/spt-mods.nix { lib = pkgs.lib; }).mkSptMods pkgs "4.0.13" .sain
+'
 ```
-
-The HM module does the equivalent of the rsync for you automatically on activation (see the `applySptMods` activation script and `resolveModClosure`).
-
-When you change `spt-mods.nix` hashes or add mods, the builds are pure and will fail fast on bad hashes.
 
 ## Notes / gotchas
 
-- We deliberately do **not** try to package the entire SPTarkov tree. The proprietary + user-writable parts stay in `~/Games/SPTarkov` (or wherever `spt-path` / `SPTARKOV_PATH` points). We only package the *tools* and *mod file trees*.
-- The archive unpack in `mkSptMod` mirrors what the bash installer does (`7zz x -o...` or `tar -xf`).
-- The rsync in the HM activation uses `--ignore-existing` to match the "don't overwrite user changes" spirit of the original `-aoa` (always overwrite? wait, actually the installer uses -aoa which *does* overwrite; the module is conservative on purpose).
-- `self.supportedSptVersion` etc. live under `lib` on the final flake outputs (and under the top-level attrs when you `import ./nix`).
+- This flake deliberately does **not** try to package the entire SPTarkov tree. The proprietary + user-writable parts stay in `~/Games/SPTarkov`. We only package the *runnable tools*.
+- The mod reference files still follow the same "extract to BepInEx/ + SPT/ then merge" model that the bash installer uses.
 
-Happy hacking. Changes here should keep `flake.nix` short.
+Happy hacking on the launchers and installer script! The mod + module bits are now your personal flake's concern.

@@ -1,13 +1,16 @@
-# SPT mod support for the flake.
-# Defines the current supported SPT version, the version map for mods,
-# and helpers to build individual mod packages (with dep resolution).
+# SPT mod support (reference implementation).
 #
-# Usage:
-#   let spt = import ./nix { lib = pkgs.lib; }; in   # or import ./nix/spt-mods.nix
+# NOTE: As of recent changes, this file and its builders are **no longer part
+# of the public flake outputs** of SPT-Linux-Guide. The flake only exposes the
+# runnable tools (spt-additions, spt-server, spt-launcher).
+#
+# The logic is kept here as a reference / starting point for you to vendor into
+# your personal configuration flake (e.g. ~/.dotfiles), where you can maintain
+# your own supportedSptVersion + mod map and expose it via your own lib / modules.
+#
+# Previous usage (no longer provided by this flake):
+#   let spt = import ./nix { lib = pkgs.lib; }; in
 #   spt.mkSptMods pkgs   # -> { uifixes = <drv>; sain = <drv>; ... }
-#
-# Or for a specific version:
-#   spt.mkSptMods pkgs "4.0.13"
 
 { lib }:
 

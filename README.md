@@ -94,11 +94,15 @@ just spt-server      # via the packaged launcher
 
 The script auto-detects NixOS (`/etc/NIXOS`) + `steam-run` and wraps `umu-run` automatically. The dev shell makes iteration easy.
 
-### Packaged entrypoints + Home Manager module (great for use as a flake input)
+### Packaged runnable entrypoints (the scope of this flake)
 
-In addition to the dev shell, the flake exposes ready-to-run packages and a Home Manager module. This is the recommended way to consume the guide from another flake (your personal desktop config, etc.).
+This flake now focuses **only** on the three runnable tools:
 
-You can also expose the packages via the overlay so that `programs.spt.*.package` options resolve automatically.
+- `spt-additions` — the main installer (umu + Proton path)
+- `spt-server` — dedicated launcher for the native Linux SPT server
+- `spt-launcher` — convenience wrapper to launch the SPT client/launcher GUI
+
+Everything else (Home Manager module, declarative mod builders + version map, `lib.mkSpt*`, `pkgs.sptMods`, etc.) has been removed from the public flake API. You maintain those in your personal configuration flake (e.g. `~/.dotfiles`), importing this repo only to obtain the underlying tools.
 
 #### `spt-additions` — the installer
 
@@ -148,46 +152,28 @@ This is a thin convenience wrapper around `spt-additions run launcher`. It gets 
 
 Requires that SPT has already been installed (via `spt-additions` or the Lutris path).
 
-Mod dependencies are supported declaratively via `passthru.dependencies` in the mod packages. The `sptMods` attrset (for the flake's `supportedSptVersion`) automatically resolves the full closure when you list root mods like `sain` (it pulls `bigbrain` and `waypoints`).
-
-See `nix/README.md` for details. `mkSptMod` (and the pre-built `sptMods` via the overlay or `lib.mkSptMods`) support common archives: .zip, .7z, .tar, .tar.gz, .tgz etc. The four example mods (UIFixes, SAIN, BigBrain, Waypoints) are kept up to date for the current SPT version in the flake.
-
-#### Home Manager module
+#### Using the tools from your personal flake
 
 ```nix
-# In your flake
-imports = [ inputs.spt-linux-guide.homeModules.spt ];
+inputs.spt-linux-guide.url = "github:MadByteDE/SPT-Linux-Guide";
 
-# In your home.nix (or homeManagerConfiguration modules)
-programs.spt = {
-  enable = true;           # provides `spt-additions`
-  server.enable = true;    # provides `spt-server`
-  launcher.enable = true;  # provides `spt-launcher`
+# ...
+nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];
 
-  # Use the versioned mod packages for the flake's supported SPT version (4.0.13).
-  # Dependencies (e.g. for SAIN) are automatically pulled in.
-  #
-  # Preferred: use the lib (works without the overlay)
-  mods = with (inputs.spt-linux-guide.lib.mkSptMods pkgs
-                 inputs.spt-linux-guide.lib.supportedSptVersion); [
-    uifixes
-    sain   # automatically pulls in bigbrain + waypoints
-  ];
-
-  # Nicer (after you also add the overlay to nixpkgs.overlays):
-  # mods = with pkgs.sptMods; [ uifixes sain ];
-};
+environment.systemPackages = [
+  pkgs.spt-additions
+  pkgs.spt-server
+  pkgs.spt-launcher
+];
 ```
 
-Mods are applied on home-manager activation by merging the `BepInEx/` and `SPT/` trees from each mod package into your SPTarkov directory (using rsync --ignore-existing to be non-destructive).
-
-For best results apply the overlay (`nixpkgs.overlays = [ inputs.spt-linux-guide.overlays.default ];`) so `sptMods` and the package options resolve automatically from `pkgs` (e.g. `pkgs.sptMods.sain`). See `nix/README.md` (and the module source) for the full details on declarative mods, dependency handling, and usage as a flake input. You can also define your own mods with `lib.mkSptMod` for any version or GitHub release (or custom fetchurl), and the module will handle merging + dep resolution.
+You can (and are expected to) implement your own Home Manager module + mod builders in your personal config, importing the packages from this input as needed.
 
 ### Why a dev shell + flake-parts?
 
 - Reproducible environment for the script's native dependencies (especially the NixOS FHS/umu story).
 - Easy testing of installer changes without polluting your user profile.
-- `flake-parts` structure makes it clean to consume as an input today (`nix run input.#spt-additions`, `packages = [ input.packages.${system}.spt-server ]`, `homeModules.spt`, overlays, etc.). Home Manager module support is included (see above).
+- `flake-parts` structure makes it clean to consume the *runnables* as an input (`nix run ...#spt-additions`, `packages = [ ... .spt-server ]`, overlays, etc.).
 - Shellcheck + syntax checks during development.
 
 ## Contributions

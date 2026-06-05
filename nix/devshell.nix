@@ -1,5 +1,5 @@
 # The development shell for the guide.
-# Provides tools for the spt-additions script and the mod system.
+# Provides tools for the spt-additions script and related tooling.
 { pkgs, lib, ... }:
 
 let
@@ -50,6 +50,6 @@ pkgs.mkShell {
     echo "  nix run .#spt-additions   # the installer"
     echo "  nix run .#spt-server      # the dedicated server"
     echo "  nix run .#spt-launcher    # the SPT client/launcher GUI"
-    echo "  Use lib.mkSptMods for versioned mods (e.g. (lib.mkSptMods pkgs).sain )"
+    echo "  (Mod builders and HM module now live in your personal config flake.)"
   '';
 }

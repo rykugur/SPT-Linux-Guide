@@ -1,5 +1,5 @@
 {
-  description = "SPT-Linux-Guide: tools and launchers for running SPTarkov on Linux, with strong NixOS support. Usable as a flake input for dev shells, wrapped scripts, and (future) modules.";
+  description = "SPT-Linux-Guide: spt-additions, spt-server, and spt-launcher for running SPTarkov on Linux (with strong NixOS support via umu/steam-run).";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -8,9 +8,10 @@
 
   outputs = { flake-parts, self, ... }@inputs:
     let
-      # Import once (pure, only needs nixpkgs.lib). Gives mod helpers + mkCoreScriptDeps +
-      # mkSptPackages + modules paths etc. This (plus the tiny perSystem below) is why
-      # flake.nix can stay short and sweet.
+      # Helpers for the runnable tools only. This flake concerns itself solely
+      # with exposing the launchers/installer (and a dev shell). Mod builders,
+      # version maps, and the Home Manager module now live in personal config
+      # flakes that import this one.
       spt = import ./nix { lib = inputs.nixpkgs.lib; };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {
@@ -29,15 +30,6 @@
 
           packages = sptPkgs;
 
-          legacyPackages = {
-            # Mods live here (not under `packages` because flake-parts types
-            # `packages.*` as single derivations). This lets you do:
-            #   nix build .#legacyPackages.x86_64-linux.sptMods.sain
-            # which gives you a convenient `result` symlink without needing
-            # the full /nix/store/... hash upfront.
-            sptMods = spt.mkSptMods pkgs' spt.supportedSptVersion;
-          };
-
           apps = {
             spt-additions = { type = "app"; program = lib.getExe sptPkgs.spt-additions; };
             spt-server    = { type = "app"; program = lib.getExe sptPkgs.spt-server; };
@@ -46,23 +38,13 @@
         };
 
       flake = {
+        # Overlay only provides the three runnable tools. Mods (sptMods) and
+        # the home-manager module are no longer part of this flake's public API.
         overlays.default = final: _prev: {
           spt-additions = self.packages.${final.system}.spt-additions;
           spt-server    = self.packages.${final.system}.spt-server;
           spt-launcher  = self.packages.${final.system}.spt-launcher;
-          sptMods       = self.lib.mkSptMods final self.lib.supportedSptVersion;
         };
-
-        lib = {
-          inherit (spt) mkSptMod mkSptMods supportedSptVersion sptModVersions;
-        };
-
-        homeModules = {
-          spt = spt.modules.homeManager;
-          default = self.homeModules.spt;
-        };
-
-        # nixosModules.default = ...;  # future
       };
     };
 }

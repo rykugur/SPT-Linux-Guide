@@ -1,3 +1,18 @@
+# Home Manager module for SPT tools + declarative mods (reference).
+#
+# NOTE: This module is no longer exported by the SPT-Linux-Guide flake
+# (homeModules.spt etc. have been removed). The flake now only concerns
+# itself with the runnable artifacts.
+#
+# This file is kept as a reference / template. You are expected to maintain
+# an equivalent (or improved) module in your personal flake, importing the
+# tool packages from the SPT-Linux-Guide input as needed.
+#
+# It previously provided:
+#   programs.spt.enable / .server.enable / .launcher.enable
+#   programs.spt.mods (list of mkSptMod packages, auto-merged via rsync)
+#   DOTNET_ROOT handling
+
 { config, lib, pkgs, ... }:
 
 let

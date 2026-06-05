@@ -1,30 +1,25 @@
 # nix/default.nix
 #
-# Single import point for everything under nix/.
-# Re-exports the mod support (pure) and provides small helpers so that flake.nix
-# (and advanced consumers) can stay tiny.
+# Helpers for the runnable artifacts exposed by this flake:
+#   spt-additions, spt-server, spt-launcher (plus dev shell).
 #
-# Usage (inside this repo or as a flake input's ./nix):
+# This repository's flake now concerns itself *only* with these runnable tools.
+# The declarative mod system (spt-mods.nix + builders) and the Home Manager
+# module have been removed from the flake's public outputs (lib, homeModules,
+# overlay sptMods, etc.).
+#
+# Those pieces remain in the repo under nix/ as reference / starting points if
+# you want to maintain your own mod map, mkSptMod, and HM module in a personal
+# configuration flake (importing this repo only for the launchers/tools).
+#
+# Usage (for advanced consumers or inside this repo):
 #   let spt = import ./nix { inherit lib; };
-#   ...
 #   coreDeps = spt.mkCoreScriptDeps pkgs;
-#   server = import spt.packageDefs."spt-server" { inherit pkgs; lib = pkgs.lib; };
-#   packages = spt.mkSptPackages pkgs lib;
-#
-# The mod bits (supportedSptVersion, mkSptMod, mkSptMods, sptModVersions) are
-# re-exported at the top level for convenience:
-#   spt.supportedSptVersion
-#   mods = spt.mkSptMods pkgs spt.supportedSptVersion;
-#
-# See README.md in this directory for more (bumping versions, adding mods,
-# dependency handling, etc.).
+#   pkgs = spt.mkSptPackages pkgs lib;  # { spt-additions, spt-server, ... }
 
 { lib }:
 
-let
-  # Pure mod data + builders (version map, mkSptMod, mkSptMods, resolve, etc.).
-  modSupport = import ./spt-mods.nix { inherit lib; };
-
+rec {
   # The list of packages that the spt-additions script, spt-server, spt-launcher,
   # and the dev shell all need at runtime. Single source of truth.
   # Callers must use a pkgs set that has `config.allowUnfree = true`.
@@ -57,7 +52,7 @@ let
   # The pkgs must allow unfree (for steam-run etc.).
   # This centralizes the import boilerplate (media path for the icon is handled by the default
   # inside packages/spt-server.nix so it always resolves correctly from the file's location).
-  mkSptPackages = pkgs: _lib:  # second arg ignored (callers sometimes pass lib for symmetry); kept so existing call sites with 2 args continue to work
+  mkSptPackages = pkgs: _lib:  # second arg ignored for call-site compatibility
     let
       coreScriptDeps = mkCoreScriptDeps pkgs;
       sptServer = import packageDefs.spt-server {
@@ -81,17 +76,7 @@ let
   # Path to the devshell expression (imported by flake with minimal args).
   devshell = ./devshell.nix;
 
-  modules = {
-    homeManager = ./modules/home-manager/spt.nix;
-  };
-in
-
-modSupport // {
-  inherit
-    mkCoreScriptDeps
-    packageDefs
-    mkSptPackages
-    devshell
-    modules
-    ;
+  # NOTE: There is no longer a `modules` or modSupport re-export.
+  # See nix/spt-mods.nix and nix/modules/home-manager/spt.nix in the source
+  # tree if you want to vendor/adapt that logic into your own flake.
 }

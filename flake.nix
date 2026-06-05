@@ -10,8 +10,8 @@
     let
       # Helpers for the runnable tools only. This flake concerns itself solely
       # with exposing the launchers/installer (and a dev shell). Mod builders,
-      # version maps, and the Home Manager module now live in personal config
-      # flakes that import this one.
+      # version maps, and the Home Manager module are out of scope for this
+      # flake's public API.
       spt = import ./nix { lib = inputs.nixpkgs.lib; };
     in
     flake-parts.lib.mkFlake { inherit inputs; } {

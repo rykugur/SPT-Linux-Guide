@@ -50,6 +50,6 @@ pkgs.mkShell {
     echo "  nix run .#spt-additions   # the installer"
     echo "  nix run .#spt-server      # the dedicated server"
     echo "  nix run .#spt-launcher    # the SPT client/launcher GUI"
-    echo "  (Mod builders and HM module now live in your personal config flake.)"
+    echo "  (Mod builders and HM module are out of scope for this flake.)"
   '';
 }

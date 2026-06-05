@@ -102,7 +102,7 @@ This flake now focuses **only** on the three runnable tools:
 - `spt-server` — dedicated launcher for the native Linux SPT server
 - `spt-launcher` — convenience wrapper to launch the SPT client/launcher GUI
 
-Everything else (Home Manager module, declarative mod builders + version map, `lib.mkSpt*`, `pkgs.sptMods`, etc.) has been removed from the public flake API. You maintain those in your personal configuration flake (e.g. `~/.dotfiles`), importing this repo only to obtain the underlying tools.
+Everything else (Home Manager module, declarative mod builders + version map, `lib.mkSpt*`, `pkgs.sptMods`, etc.) has been removed from the public flake API. Such functionality can be implemented in a consuming flake that imports this one.
 
 #### `spt-additions` — the installer
 
@@ -152,7 +152,7 @@ This is a thin convenience wrapper around `spt-additions run launcher`. It gets 
 
 Requires that SPT has already been installed (via `spt-additions` or the Lutris path).
 
-#### Using the tools from your personal flake
+#### Using the tools from a consuming flake
 
 ```nix
 inputs.spt-linux-guide.url = "github:MadByteDE/SPT-Linux-Guide";
@@ -167,7 +167,7 @@ environment.systemPackages = [
 ];
 ```
 
-You can (and are expected to) implement your own Home Manager module + mod builders in your personal config, importing the packages from this input as needed.
+Additional functionality such as a Home Manager module or declarative mod builders can be implemented by the consumer, importing the packages from this input as needed.
 
 ### Why a dev shell + flake-parts?
 

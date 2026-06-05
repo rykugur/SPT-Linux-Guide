@@ -8,9 +8,7 @@
 # module have been removed from the flake's public outputs (lib, homeModules,
 # overlay sptMods, etc.).
 #
-# Those pieces remain in the repo under nix/ as reference / starting points if
-# you want to maintain your own mod map, mkSptMod, and HM module in a personal
-# configuration flake (importing this repo only for the launchers/tools).
+# Those pieces remain in the repo under nix/ as reference material.
 #
 # Usage (for advanced consumers or inside this repo):
 #   let spt = import ./nix { inherit lib; };
@@ -78,5 +76,5 @@ rec {
 
   # NOTE: There is no longer a `modules` or modSupport re-export.
   # See nix/spt-mods.nix and nix/modules/home-manager/spt.nix in the source
-  # tree if you want to vendor/adapt that logic into your own flake.
+  # tree for reference implementations of similar functionality.
 }

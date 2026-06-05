@@ -4,8 +4,8 @@
 # (homeModules.spt etc. have been removed). The flake now only concerns
 # itself with the runnable artifacts.
 #
-# This file is kept as a reference / template. You are expected to maintain
-# an equivalent (or improved) module in your personal flake, importing the
+# This file is kept as reference material for anyone who wishes to
+# implement similar functionality in a consuming flake, importing the
 # tool packages from the SPT-Linux-Guide input as needed.
 #
 # It previously provided:

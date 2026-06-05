@@ -4,9 +4,8 @@
 # of the public flake outputs** of SPT-Linux-Guide. The flake only exposes the
 # runnable tools (spt-additions, spt-server, spt-launcher).
 #
-# The logic is kept here as a reference / starting point for you to vendor into
-# your personal configuration flake (e.g. ~/.dotfiles), where you can maintain
-# your own supportedSptVersion + mod map and expose it via your own lib / modules.
+# The logic is kept here as reference material for anyone who wishes to
+# implement similar mod support in a consuming flake.
 #
 # Previous usage (no longer provided by this flake):
 #   let spt = import ./nix { lib = pkgs.lib; }; in

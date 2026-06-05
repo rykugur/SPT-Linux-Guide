@@ -9,10 +9,9 @@ module are no longer part of the published flake outputs (`lib`, `homeModules`,
 overlay `sptMods`, etc.).
 
 The files under `nix/` (especially `spt-mods.nix` and `modules/home-manager/spt.nix`)
-remain in the source tree as reference / copy-paste starting points. You are
-expected to maintain your own version of the mod map + module in your personal
-configuration flake (e.g. `~/.dotfiles/flake.nix`), importing *this* flake
-only to obtain the launcher packages.
+remain in the source tree as reference material. They can be used as a basis
+for implementing similar functionality in a consuming flake that imports this
+one.
 
 ## Layout
 
@@ -64,7 +63,7 @@ The files `spt-mods.nix` and `modules/home-manager/spt.nix` are **no longer expo
 
 They are kept in the tree because the mod installation pattern (extract archive → merge BepInEx/ + SPT/ trees into a mutable `~/Games/SPTarkov`) and the activation-time rsync approach are still useful.
 
-If you want declarative mods + an HM module, copy/adapt the logic into your personal flake (e.g. `~/.dotfiles/nix/spt-mods.nix` and your own `programs.spt` module) while importing *this* flake to get the underlying `spt-server` / `spt-additions` packages.
+If implementing declarative mods + an HM module, the logic can be copied/adapted from these files into a consuming flake while importing *this* flake to get the underlying `spt-server` / `spt-additions` packages.
 
 See the files themselves for the previous implementation details (version map, passthru.dependencies, resolveModClosure, rsync --ignore-existing, etc.).
 
@@ -84,7 +83,7 @@ environment.systemPackages = [
 ];
 ```
 
-You can still call `mkSptPackages` / `mkCoreScriptDeps` / import the raw `packageDefs` directly if you want to build your own wrappers in your config.
+You can still call `mkSptPackages` / `mkCoreScriptDeps` / import the raw `packageDefs` directly if you want to build custom wrappers.
 
 (The old `lib.mkSptMods`, `homeModules.spt`, and `pkgs.sptMods` are no longer provided by this flake.)
 
@@ -112,4 +111,4 @@ NIXPKGS_ALLOW_UNFREE=1 nix build --impure --expr '
 - This flake deliberately does **not** try to package the entire SPTarkov tree. The proprietary + user-writable parts stay in `~/Games/SPTarkov`. We only package the *runnable tools*.
 - The mod reference files still follow the same "extract to BepInEx/ + SPT/ then merge" model that the bash installer uses.
 
-Happy hacking on the launchers and installer script! The mod + module bits are now your personal flake's concern.
+Happy hacking on the launchers and installer script! The mod + module bits are out of scope for this flake.

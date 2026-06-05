@@ -9,18 +9,20 @@ let
 in
 
 pkgs.mkShell {
-  packages = coreScriptDeps ++ (with pkgs; [
-    # Dev-only helpers (not needed by the packaged scripts).
-    shellcheck
-    shfmt
-    git
-    just
-    file
-    which
-    tree
-    winetricks
-    cabextract
-  ]);
+  packages =
+    coreScriptDeps
+    ++ (with pkgs; [
+      # Dev-only helpers (not needed by the packaged scripts).
+      shellcheck
+      shfmt
+      git
+      just
+      file
+      which
+      tree
+      winetricks
+      cabextract
+    ]);
 
   env = {
     DOTNET_ROOT = "${pkgs.dotnet-aspnetcore_9}/share/dotnet";
@@ -50,6 +52,5 @@ pkgs.mkShell {
     echo "  nix run .#spt-additions   # the installer"
     echo "  nix run .#spt-server      # the dedicated server"
     echo "  nix run .#spt-launcher    # the SPT client/launcher GUI"
-    echo "  (Mod builders and HM module are out of scope for this flake.)"
   '';
 }

@@ -3,13 +3,6 @@
 # Helpers for the runnable artifacts exposed by this flake:
 #   spt-additions, spt-server, spt-launcher (plus dev shell).
 #
-# This repository's flake now concerns itself *only* with these runnable tools.
-# The declarative mod system (spt-mods.nix + builders) and the Home Manager
-# module have been removed from the flake's public outputs (lib, homeModules,
-# overlay sptMods, etc.).
-#
-# Those pieces remain in the repo under nix/ as reference material.
-#
 # Usage (for advanced consumers or inside this repo):
 #   let spt = import ./nix { inherit lib; };
 #   coreDeps = spt.mkCoreScriptDeps pkgs;
@@ -73,8 +66,4 @@ rec {
 
   # Path to the devshell expression (imported by flake with minimal args).
   devshell = ./devshell.nix;
-
-  # NOTE: There is no longer a `modules` or modSupport re-export.
-  # See nix/spt-mods.nix and nix/modules/home-manager/spt.nix in the source
-  # tree for reference implementations of similar functionality.
 }

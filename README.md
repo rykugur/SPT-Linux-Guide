@@ -62,8 +62,7 @@ This repository includes a Nix flake (structured with [flake-parts](https://gith
 The long-term intent is that you can add this repo as a flake input and get:
 
 - A reliable way to run `spt-additions` (the installer) with all its native dependencies on any Nix machine.
-- `spt-server`, `spt-launcher`, and other launchers.
-- (Planned) NixOS / home-manager modules for declarative setup of the server, desktop entries, DOTNET_ROOT, etc.
+- `spt-server` and `spt-launcher`.
 
 ### Quick start (with direnv)
 
@@ -96,13 +95,11 @@ The script auto-detects NixOS (`/etc/NIXOS`) + `steam-run` and wraps `umu-run` a
 
 ### Packaged runnable entrypoints (the scope of this flake)
 
-This flake now focuses **only** on the three runnable tools:
+This flake focuses **only** on the three runnable tools:
 
 - `spt-additions` — the main installer (umu + Proton path)
 - `spt-server` — dedicated launcher for the native Linux SPT server
 - `spt-launcher` — convenience wrapper to launch the SPT client/launcher GUI
-
-Everything else (Home Manager module, declarative mod builders + version map, `lib.mkSpt*`, `pkgs.sptMods`, etc.) has been removed from the public flake API. Such functionality can be implemented in a consuming flake that imports this one.
 
 #### `spt-additions` — the installer
 
@@ -166,8 +163,6 @@ environment.systemPackages = [
   pkgs.spt-launcher
 ];
 ```
-
-Additional functionality such as a Home Manager module or declarative mod builders can be implemented by the consumer, importing the packages from this input as needed.
 
 ### Why a dev shell + flake-parts?
 

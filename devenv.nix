@@ -2,7 +2,7 @@
 # devenv experience over the simple mkShell in flake.nix).
 #
 # To use it:
-#   1. Make sure you have devenv installed (e.g. via the module in your dotfiles)
+#   1. Make sure you have devenv installed
 #   2. `devenv shell` (or configure direnv to use it)
 #
 # For the integrated flake experience, the flake.nix + mkShell above is recommended

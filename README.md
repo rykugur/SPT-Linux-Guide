@@ -57,12 +57,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/MadByteDE/SPT-Linux-Guid
 
 ## Development
 
-This repository includes a Nix flake (structured with [flake-parts](https://github.com/hercules-ci/flake-parts)) aimed at making it easy to develop the `spt-additions` installer, run SPT-related tools, and — most importantly — consume the guide from other flakes (your desktop config, deploy scripts, etc.).
-
-The long-term intent is that you can add this repo as a flake input and get:
-
-- A reliable way to run `spt-additions` (the installer) with all its native dependencies on any Nix machine.
-- `spt-server` and `spt-launcher`.
+This repository includes a Nix flake (using [flake-parts](https://github.com/hercules-ci/flake-parts)) that provides packages and apps for `spt-additions`, `spt-server`, and `spt-launcher`, along with a development shell for working on the project.
 
 ### Quick start (with direnv)
 
@@ -168,7 +163,7 @@ environment.systemPackages = [
 
 - Reproducible environment for the script's native dependencies (especially the NixOS FHS/umu story).
 - Easy testing of installer changes without polluting your user profile.
-- `flake-parts` structure makes it clean to consume the *runnables* as an input (`nix run ...#spt-additions`, `packages = [ ... .spt-server ]`, overlays, etc.).
+- `flake-parts` structure cleanly exposes the three runnables as packages, apps, and via the overlay.
 - Shellcheck + syntax checks during development.
 
 ## Contributions

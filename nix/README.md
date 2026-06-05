@@ -70,7 +70,6 @@ See the files themselves for the previous implementation details (version map, p
 ## Using this as a flake input
 
 ```nix
-# your flake
 inputs.spt-linux-guide.url = "github:MadByteDE/SPT-Linux-Guide";
 
 # then (only the runnables)

@@ -110,7 +110,7 @@ Everything else (Home Manager module, declarative mod builders + version map, `l
 # Run the additions installer directly (all native deps provided by the flake)
 nix run github:MadByteDE/SPT-Linux-Guide#spt-additions
 
-# Or from a pinned input in your own flake:
+# Or from a pinned input in a consuming flake:
 # packages = [ inputs.spt-linux-guide.packages.${pkgs.system}.spt-additions ];
 # Then just run `spt-additions`
 ```

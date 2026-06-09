@@ -85,7 +85,9 @@ dotnet --list-runtimes | grep -i aspnet
 
 The `spt-additions` script will also perform a non-fatal check for AspNet 9.0 before installing SPT. The same `DOTNET_ROOT` lets the installed `SPT.Server.Linux` actually start.
 
-See the [NixOS support wiki page](wiki/wiki/nixos-support.md) (in this repo) and historical PR [#14](https://github.com/MadByteDE/SPT-Linux-Guide/pull/14) for more context, steam-run workarounds for the installer itself, and Lutris-specific tips.
+For Nix-based systems, this repo also ships a flake — see the "Nix users" section of the [main README](../README.md). The packaged `spt-server` bakes in `DOTNET_ROOT` so you can skip the session variable if you prefer.
+
+See historical PR [#14](https://github.com/MadByteDE/SPT-Linux-Guide/pull/14) for additional context, `steam-run` workarounds, and Lutris-specific tips.
 
 ***
 Still having issues? Visit our [issues section](../../docs/issues.md).

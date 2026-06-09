@@ -19,23 +19,19 @@
 
       perSystem =
         {
-          pkgs,
           system,
           lib,
           ...
         }:
         let
-          pkgs' = import inputs.nixpkgs {
+          pkgs = import inputs.nixpkgs {
             inherit system;
             config.allowUnfree = true;
           };
-          sptPkgs = spt.mkSptPackages pkgs' lib;
+          sptPkgs = spt.mkSptPackages pkgs;
         in
         {
-          devShells.default = import spt.devshell {
-            pkgs = pkgs';
-            inherit lib;
-          };
+          devShells.default = import spt.devshell { inherit pkgs lib; };
 
           packages = sptPkgs;
 

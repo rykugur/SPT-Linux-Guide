@@ -123,10 +123,7 @@ m_mkdir() { mkdir -p "$@" &>> "${LOG_PATH}" || err "Command \"mkdir -p $*\" fail
 m_ls() { ls "$@" 2>> "${LOG_PATH}" || err "Command \"ls $*\" failed" "$?"; }
 m_mv() { mv "$@" &>> "${LOG_PATH}" || err "Command \"mv $*\" failed" "$?"; }
 m_curl() { curl --connect-timeout 30 -f "$@" || err "Command \"curl --connect-timeout 30 -f $*\" failed" "$?"; }
-m_umu() {
-    local umu=( "${UMU_CMD[@]:-${UMU_PATH}}" )
-    "${umu[@]}" "$@" 2>> "${LOG_PATH}" || err "Command \"umu-run $*\" failed" "$?"; 
-}
+m_umu() { "${UMU_CMD[@]}" "$@" 2>> "${LOG_PATH}" || err "Command \"umu-run $*\" failed" "$?"; }
 m_7z() { 7zzs "$@" 2>> "${LOG_PATH}" || err "Command \"7zzs $*\" failed" "$?"; }
 m_tar() { tar "$@" 2>> "${LOG_PATH}" || err "Command \"tar $*\" failed" "$?"; }
 
@@ -641,12 +638,11 @@ check_aspnet() {
     if ! dotnet --list-runtimes 2>/dev/null | grep "AspNet" | grep "9.0" &>/dev/null; then
         warn "\"ASP.NET Runtime 9.0\" is not installed."
         msg "   ► ASP.NET is ${BOLD}REQUIRED${RESET} to run the SPT Linux server!"
+        msg "   ► See docs/aspnet.md for distro-specific install instructions."
         if [[ -e /etc/NIXOS ]]; then
-            msg "   ► On NixOS: add 'dotnet-aspnetcore_9' to your packages + set"
+            msg "   ► NixOS: add 'dotnet-aspnetcore_9' to your packages and set"
             msg "   ► DOTNET_ROOT=\"\${pkgs.dotnet-aspnetcore_9}/share/dotnet/\" in sessionVariables."
-            msg "   ► See docs/aspnet.md (Nixpkgs section) and wiki/wiki/nixos-support.md"
-        else
-            msg "   ► See docs/aspnet.md for distro-specific install instructions."
+            msg "   ► (Or use this repo's flake: 'nix run github:MadByteDE/SPT-Linux-Guide#spt-server'.)"
         fi
         sleep 3
     fi
@@ -655,10 +651,9 @@ check_aspnet() {
 
 check_native_deps() {
     if [[ -e /etc/NIXOS ]]; then
-        msg "NixOS detected."
-        msg "   ► Prefer providing jq, xxd, 7zzs (p7zip or 7zip pkg), umu-run via your nix profile."
-        msg "   ► The script's downloader fallbacks should still work but may need steam-run wrapper."
-        msg "   ► See wiki/wiki/nixos-support.md and wiki/wiki/dep-management.md for details."
+        msg "NixOS detected: prefer providing jq, xxd, 7zzs (p7zip), umu-run via your nix profile."
+        msg "   ► The script's downloader fallbacks may need a steam-run wrapper to run."
+        msg "   ► Easiest path: use this repo's flake (nix run github:MadByteDE/SPT-Linux-Guide#spt-additions)."
     fi
 
     local status; local cmd
@@ -1723,10 +1718,11 @@ add_app_shortcut() {
     local env
     [[ -n "${CACHE[env]}" ]] && env="env ${CACHE[env]}"
 
-    # Generate the exec string
+    # Generate the exec string. Use UMU_CMD (not raw UMU_PATH) so any wrapper
+    # set up in main() — e.g. NixOS steam-run wrap — is honored by the shortcut.
     local exec_string
     case "${CACHE[exe_path]}" in
-        *exe*|*bat*|*msi*) exec_string="Exec=${env}\"${UMU_PATH}\" \"${CACHE[working_dir]}/${CACHE[exe_path]}\" ${CACHE[args]}" ;;
+        *exe*|*bat*|*msi*) exec_string="Exec=${env}${UMU_CMD[*]} \"${CACHE[working_dir]}/${CACHE[exe_path]}\" ${CACHE[args]}" ;;
         *) exec_string="Exec=${env}\"${CACHE[working_dir]}/${CACHE[exe_path]}\" ${CACHE[args]}" ;;
     esac
 
@@ -2179,13 +2175,13 @@ main() {
     local dirs=( "${TMP_DIR}" "${DATA_DIR}" "${RUNTIME_DIR}" "${CONFIG_DIR}" "${APP_DIR}" "${ICO_DIR}" "${FILES_DIR}" )
     local dir; for dir in "${dirs[@]}"; do [[ ! -d "${dir}" ]] && mkdir -p "${dir}"; done
 
-    # NixOS + steam-run FHS wrapper for umu (see wiki/wiki/nixos-support.md)
-    # Do this here so msg() is available and it affects all later m_umu calls.
+    # NixOS + steam-run FHS wrapper for umu. Do this after dir creation so msg() is available
+    # and it affects all later m_umu calls and any .desktop shortcuts written below.
     if [[ -e /etc/NIXOS ]] && command -v steam-run &>/dev/null; then
         if [[ "${UMU_CMD[0]}" != "steam-run" ]]; then
             UMU_CMD=(steam-run "${UMU_PATH}")
             msg "NixOS detected + steam-run available — wrapping umu-run for FHS compatibility."
-            msg "   ► (This is a common community workaround; see PR#14 and the nixos-support wiki page.)"
+            msg "   ► (Common community workaround; see PR#14 for context.)"
         fi
     fi
 

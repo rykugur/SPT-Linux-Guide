@@ -1,1 +1,0 @@
-../../docs/lutris/manual_guide.md

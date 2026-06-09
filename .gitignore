@@ -1,9 +1,8 @@
 scripts/prepare-release.sh
 scripts/shellcheck
 
-# devenv / direnv
-.devenv
+# direnv / nix
 .direnv
-.pre-commit-config.yaml
+.envrc
 result
 result-*

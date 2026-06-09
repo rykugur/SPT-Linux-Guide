@@ -41,15 +41,12 @@ rec {
 
   # Build the three public packages (plus `default`) for the given pkgs.
   # The pkgs must allow unfree (for steam-run etc.).
-  # This centralizes the import boilerplate (media path for the icon is handled by the default
-  # inside packages/spt-server.nix so it always resolves correctly from the file's location).
-  mkSptPackages = pkgs: _lib:  # second arg ignored for call-site compatibility
+  mkSptPackages = pkgs:
     let
       coreScriptDeps = mkCoreScriptDeps pkgs;
       sptServer = import packageDefs.spt-server {
         inherit pkgs;
         lib = pkgs.lib;
-        # media omitted: spt-server.nix has a correct default (../../media relative to *its* location)
       };
       sptAdditions = import packageDefs.spt-additions {
         inherit pkgs coreScriptDeps;
